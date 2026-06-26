@@ -1,0 +1,2151 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Staffing Capacity & FTE Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            therapy: '#0d9488',    // Teal
+                            coaching: '#6366f1',   // Indigo
+                            psychiatry: '#f59e0b', // Amber
+                            darkBg: '#090d16',
+                            darkCard: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse for CSV Parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        
+        /* Ultra-sleek invisible spinners that reveal on hover */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            opacity: 0;
+            cursor: pointer;
+            transition: opacity 0.2s ease-in-out;
+        }
+        input[type=number]:hover::-webkit-inner-spin-button, 
+        input[type=number]:focus::-webkit-inner-spin-button { 
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-[#090d16] dark:text-slate-100 transition-colors duration-200 min-h-full flex flex-col">
+
+    <!-- HEADER -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a]/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                    <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">Clinical Staffing & FTE Dashboard</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Active Scope: <span id="active-scope-label" class="font-semibold text-indigo-600 dark:text-indigo-400">Loading timeframe...</span> | Status: <span id="sync-status" class="font-semibold text-indigo-600 dark:text-indigo-400">Syncing...</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- TAB CONTROLLER -->
+            <div class="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/50 dark:border-slate-700/60 shadow-inner">
+                <button onclick="window.switchTab('global')" id="tab-btn-global" class="px-4 py-1.5 text-xs font-bold rounded-lg shadow-sm bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 transition-all flex items-center gap-1.5">
+                    <i data-lucide="globe" class="w-3.5 h-3.5"></i> Global Macro Capacity
+                </button>
+                <button onclick="window.switchTab('states')" id="tab-btn-states" class="px-4 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all flex items-center gap-1.5">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5"></i> State Telehealth Router
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+                <div class="hidden md:flex flex-col items-end text-right mr-2">
+                    <span id="last-updated" class="text-[10px] text-slate-400">Syncing...</span>
+                </div>
+
+                <button onclick="window.toggleGuideModal()" class="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-sm transition-all duration-150" title="Dashboard Navigation Guide">
+                    <i data-lucide="book-open" class="w-4.5 h-4.5"></i>
+                </button>
+
+                <button onclick="window.fetchAndProcess()" class="p-2 sm:px-3 sm:py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg flex items-center gap-2 shadow-sm transition-all duration-150">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="sync-icon"></i>
+                    <span class="hidden sm:inline">Sync Google Sheets</span>
+                </button>
+
+                <button onclick="window.toggleConfigPanel()" class="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg shadow-sm transition-all duration-150" title="Open Exclusion settings">
+                    <i data-lucide="sliders" class="w-4.5 h-4.5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+
+        <!-- DASHBOARD GUIDE MODAL (Hidden by Default) -->
+        <div id="guide-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm p-4 transition-opacity duration-300">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div class="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                            <i data-lucide="book-open" class="w-5 h-5"></i>
+                        </div>
+                        <h2 class="text-base font-bold text-slate-900 dark:text-white">Dashboard Navigation Guide</h2>
+                    </div>
+                    <button onclick="window.toggleGuideModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="p-6 overflow-y-auto space-y-6 text-sm text-slate-600 dark:text-slate-300">
+                    <div>
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 mb-2 uppercase tracking-wide text-xs">Core Focus</h3>
+                        <p class="leading-relaxed">This dashboard is a real-time, cloud-synced command center designed to bridge HR headcount planning with clinical capacity forecasting. It empowers leadership to simulate hiring scenarios, identify bottlenecks, and make data-driven decisions to safely meet future patient demand.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <h3 class="font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-teal-500"></i> Tab 1: Global Macro Capacity</h3>
+                            <p class="text-[13px] leading-relaxed">Evaluates your global baseline reality. It mirrors the exact data pulled from the Google Sheet <strong>(Active Roster + Signed Offers)</strong> to give you a reliable anchor of your overall staffing health, without any hypothetical overrides.</p>
+                        </div>
+                        <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+                            <h3 class="font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-indigo-500"></i> Tab 2: State Telehealth Router</h3>
+                            <p class="text-[13px] leading-relaxed">Visualizes the cross-licensure matrix across your 30 telehealth states. Lets you model, edit, and simulate fractional state capacity allocations directly next to localized monthly demand curves.</p>
+                        </div>
+                    </div>
+                    <div class="border-t border-slate-100 dark:border-slate-800 pt-5">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 mb-3 uppercase tracking-wide text-xs">Key Logic & Distinctions</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start gap-3">
+                                <div class="mt-0.5 p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 shrink-0"><i data-lucide="users" class="w-4 h-4"></i></div>
+                                <div><strong class="text-slate-700 dark:text-slate-200">Headcount vs. Functional FTE:</strong> The Headcount Waterfall tracks actual human bodies. The Adjusted FTE Matrix tracks patient-facing capacity. Do not multiply Headcount by ratio capacity directly.</div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <div class="mt-0.5 p-1.5 rounded-md bg-rose-50 dark:bg-rose-900/20 text-rose-500 shrink-0"><i data-lucide="bell-ring" class="w-4 h-4"></i></div>
+                                <div><strong class="text-slate-700 dark:text-slate-200">Interactive Triggers:</strong> The "Adjusted Scenario Gaps" timeline dynamically listens to your sandbox inputs. Red alerts will visually clear out in real-time as deficits are filled.</div>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <div class="mt-0.5 p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-500 shrink-0"><i data-lucide="cloud-upload" class="w-4 h-4"></i></div>
+                                <div><strong class="text-slate-700 dark:text-slate-200">Cloud Syncing:</strong> Your scenario plans are saved to the cloud whenever you click "Save Inputs". This allows multiple leaders to view the exact same strategic pipeline assumptions.</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 flex justify-end">
+                    <button onclick="window.toggleGuideModal()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm">Got it, let's plan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALERTS / NOTIFICATION BANNER -->
+        <div id="alert-banner" class="hidden rounded-xl border p-4 shadow-sm transition-all duration-300">
+            <div class="flex items-start gap-3">
+                <div id="alert-icon-container" class="p-1 rounded-lg"></div>
+                <div class="flex-grow">
+                    <h3 id="alert-title" class="text-sm font-semibold"></h3>
+                    <p id="alert-message" class="text-xs mt-1 text-slate-600 dark:text-slate-300"></p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.hideAlertBanner()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS / CONFIGURATION PANEL -->
+        <div id="config-panel" class="hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-md transition-all duration-250">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+                <div class="flex items-center gap-2"><i data-lucide="sliders" class="w-5 h-5 text-indigo-500"></i><h2 class="text-base font-bold text-slate-900 dark:text-white">Dashboard Controls & Exclusion Managers</h2></div>
+                <button onclick="window.toggleConfigPanel()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div><label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Global Base GID URL</label><input id="csv-url-input" type="text" class="w-full bg-slate-50 dark:bg-slate-900 border rounded-lg py-2 px-3 text-xs font-mono outline-none" /></div>
+                    <div><label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">User State GID (Looker CRM)</label><input id="looker-gid-input" type="text" value="922377958" class="w-full bg-slate-50 dark:bg-slate-900 border rounded-lg py-2 px-3 text-xs font-mono outline-none" /></div>
+                    <div><label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">S&D Forecast GID (State Heatmap)</label><input id="sd-gid-input" type="text" value="975777941" class="w-full bg-slate-50 dark:bg-slate-900 border rounded-lg py-2 px-3 text-xs font-mono outline-none" /></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Archive Past Months (Start View From)</label>
+                        <select id="start-month-input" class="w-full bg-slate-50 dark:bg-slate-900 border rounded-lg py-2 px-3 text-xs outline-none">
+                            <option value="Auto">Auto-Detect Current Month</option><option value="Show All">Show All (No Archiving)</option><option value="June">June</option><option value="July">July</option><option value="August">August</option><option value="September">September</option><option value="October">October</option><option value="November">November</option><option value="December">December</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 dark:border-slate-800 pt-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5"><i data-lucide="calendar-off" class="w-4 h-4 text-rose-500"></i> Exclude Specific Months (Ignore Entirely)</h3>
+                    <div class="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
+                        <table class="w-full text-left text-xs"><thead class="bg-slate-50 dark:bg-slate-800/50"><tr id="exclusions-thead"></tr></thead><tbody id="exclusions-tbody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody></table>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2.5 pt-2">
+                    <button onclick="window.resetToDefaultUrl()" class="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 rounded-lg text-xs font-bold">Reset Defaults</button>
+                    <button onclick="window.saveAndReloadUrl()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5"></i> Apply & Refresh</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- TAB 1 CONTENT: THE GLOBAL MACRO CAPACITY                 -->
+        <!-- ========================================================= -->
+        <div id="view-global" class="space-y-6 transition-all duration-200">
+            <!-- SNAPSHOT MATRIX -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 gap-2">
+                    <div>
+                        <h2 class="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2"><i data-lucide="grid" class="w-4.5 h-4.5 text-indigo-500"></i> Clinical Staffing & FTE Dashboard Snapshot</h2>
+                        <p class="text-[11px] text-slate-500">At-a-glance matrix showing monthly recruitment status. Top static reality based purely on Google Sheet data (Includes Active Roster + Signed Offers).</p>
+                    </div>
+                    <div class="flex items-center gap-1 text-[10px] text-slate-400">
+                        <span class="w-2.5 h-2.5 bg-emerald-500/20 text-emerald-600 rounded-full inline-block text-center font-bold">✓</span> Surplus
+                        <span class="w-2.5 h-2.5 bg-rose-500/20 text-rose-600 rounded-full inline-block text-center font-bold">⚠</span> Deficit / Hire
+                    </div>
+                </div>
+                <div class="overflow-x-auto w-full rounded-xl border border-slate-100 dark:border-slate-800">
+                    <table class="w-full text-left text-xs">
+                        <thead><tr id="snapshot-months-header" class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase tracking-wider font-extrabold border-b border-slate-200/50 dark:border-slate-800"></tr></thead>
+                        <tbody id="snapshot-matrix-body" class="divide-y divide-slate-150 dark:divide-slate-800 font-medium"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FILTERS -->
+            <div id="spotlight-section-target" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2"><i data-lucide="calendar-days" class="w-5 h-5 text-indigo-500"></i> Static Baseline Evaluation</h2>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 italic mt-1 font-medium">* Disclaimer: Evaluates static reality only. Does not factor in hypothetical over-rides.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <label for="month-selector" class="text-xs font-bold text-slate-500 uppercase tracking-wider">Target Month:</label>
+                    <select id="month-selector" onchange="window.changeActiveMonth()" class="bg-slate-100 dark:bg-slate-800 border-r-8 border-r-transparent font-bold text-slate-900 dark:text-white rounded-xl py-2 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer min-w-[160px]"></select>
+                </div>
+            </div>
+
+            <!-- DYNAMIC SCORECARDS GRID -->
+            <div id="scorecards-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6"></div>
+
+            <!-- TIMELINE ALERTS -->
+            <div class="bg-gradient-to-r from-red-50/40 via-indigo-50/10 to-teal-50/10 dark:from-red-950/20 dark:via-slate-900 dark:to-teal-950/10 border border-red-100 dark:border-red-950/40 rounded-2xl p-5 shadow-sm mt-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200/50 dark:border-slate-800/50 pb-3.5 mb-3.5 gap-4 cursor-pointer" onclick="window.toggleHiringTriggers()">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-900 dark:text-indigo-200 flex items-center gap-2 animate-pulse">
+                            <i data-lucide="bell-ring" class="text-rose-500 w-5 h-5 animate-bounce"></i> Adjusted Scenario Gaps & Hiring Triggers
+                            <i id="triggers-collapse-icon" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200 ml-2"></i>
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Dynamically gamifies your scenario inputs. Type in new 'Open Reqs' or 'Hypothetical Additions' below to clear the gaps!</p>
+                    </div>
+                    <div id="hiring-trigger-badge" class="text-xs font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 px-3 py-1 rounded-full flex items-center gap-1">Calculating...</div>
+                </div>
+                <div id="hiring-timeline-wrapper" class="hidden transition-all duration-300 overflow-hidden"><div id="hiring-timeline" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mt-2"></div></div>
+            </div>
+
+            <!-- SCENARIO PLANNER INPUT PANEL -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm mt-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 dark:border-slate-800 pb-3 mb-4 gap-2">
+                    <div>
+                        <h2 class="text-sm font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center gap-2"><i data-lucide="flask-conical" class="w-4.5 h-4.5"></i> Hypothetical Hiring Scenario Planner</h2>
+                        <p class="text-[11px] text-slate-500">Input signed offers, open reqs, and attrition to model your adjusted future capacity.</p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span id="save-indicator" class="text-[10px] font-bold text-emerald-500 opacity-0 transition-opacity duration-300 whitespace-nowrap">✓ Saved to Cloud</span>
+                        <button onclick="window.toggleUtilTable()" class="text-xs px-3 py-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 border rounded-lg font-bold transition-colors flex items-center gap-1.5"><i data-lucide="target" class="w-3.5 h-3.5"></i> Target Utilizations</button>
+                        <button onclick="window.toggleAssumptionsTable()" class="text-xs px-3 py-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 border rounded-lg font-bold transition-colors flex items-center gap-1.5"><i data-lucide="sliders" class="w-3.5 h-3.5"></i> Attrition & Buffers</button>
+                        <button onclick="window.toggleRampTable()" class="text-xs px-3 py-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 border rounded-lg font-bold transition-colors flex items-center gap-1.5"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> Setup Ramps</button>
+                        <button onclick="window.saveAllScenarios()" class="text-xs px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-colors flex items-center gap-1.5 shadow-sm"><i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i> Save Inputs to Cloud</button>
+                        <button onclick="window.restoreDefaultScenario()" class="text-xs px-2.5 py-1.5 bg-slate-100 hover:bg-rose-100 dark:bg-slate-800 text-slate-700 border rounded-lg font-bold"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                </div>
+
+                <div id="util-table-container" class="hidden mb-6 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div class="mb-3"><h3 class="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wide flex items-center gap-1.5"><i data-lucide="target" class="w-3.5 h-3.5 text-indigo-500"></i> Dynamic Target Utilization Configurator</h3></div>
+                    <div class="overflow-x-auto w-full rounded-lg border border-slate-200 dark:border-slate-700"><table class="w-full text-left text-[11px]"><thead class="bg-white dark:bg-slate-850"><tr id="util-input-header"></tr></thead><tbody id="util-input-body"></tbody></table></div>
+                </div>
+                <div id="assumptions-table-container" class="hidden mb-6 bg-indigo-50/30 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100/50">
+                    <div class="mb-3"><h3 class="text-[11px] font-extrabold text-indigo-700 dark:text-indigo-300 uppercase">Strategic Operational Assumptions</h3></div>
+                    <div class="overflow-x-auto w-full rounded-lg border border-slate-200/60 dark:border-slate-700"><table class="w-full text-left text-[11px]"><thead><tr class="bg-white dark:bg-slate-800 font-bold border-b border-slate-200 dark:border-slate-700"><th class="py-2 px-4 w-48">Discipline</th><th class="py-2 px-3 text-center">Expected Monthly Attrition (FTE)</th><th class="py-2 px-3 text-center">Target Minimum Surplus Buffer (FTE)</th></tr></thead><tbody id="assumptions-input-body"></tbody></table></div>
+                </div>
+                <div id="ramp-table-container" class="hidden mb-6 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div class="flex justify-between items-center mb-3"><h3 class="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 uppercase">Provider Ramp Configuration</h3></div>
+                    <div class="overflow-x-auto w-full rounded-lg border border-slate-200"><table class="w-full text-left text-[11px]"><thead class="bg-white dark:bg-slate-800"><tr id="ramp-input-header"></tr></thead><tbody id="ramp-input-body"></tbody></table></div>
+                </div>
+
+                <div class="sticky top-[72px] z-30 flex items-center gap-2 mb-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur p-1.5 rounded-xl w-max shadow-sm border border-slate-200 dark:border-slate-750">
+                    <button onclick="window.toggleScenarioFilter('therapy')" id="tab-filter-therapy" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-indigo-50 dark:bg-indigo-500/20 shadow-sm text-indigo-600 dark:text-indigo-400">Therapy</button>
+                    <button onclick="window.toggleScenarioFilter('coaching')" id="tab-filter-coaching" class="px-4 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white">Coaching</button>
+                    <button onclick="window.toggleScenarioFilter('psychiatry')" id="tab-filter-psychiatry" class="px-4 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white">Psychiatry</button>
+                </div>
+
+                <div class="overflow-x-auto w-full rounded-xl border border-slate-100 dark:border-slate-800 mb-6 shadow-sm"><table class="w-full text-left text-xs"><thead><tr id="scenario-input-header" class="bg-indigo-50/50 dark:bg-indigo-900/30 text-indigo-950 dark:text-indigo-200 uppercase font-extrabold border-b border-slate-200 dark:border-slate-800"></tr></thead><tbody id="scenario-input-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900"></tbody></table></div>
+
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-3"><div class="flex items-center gap-2"><i data-lucide="arrow-down-right" class="w-4 h-4 text-emerald-500"></i><h3 class="text-xs font-bold text-slate-700 dark:text-slate-300">Adjusted FTE Status Matrix</h3></div></div>
+                <div class="overflow-x-auto w-full rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm mb-6"><table class="w-full text-left text-xs"><thead><tr id="scenario-output-header" class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase font-extrabold border-b border-slate-200/50 dark:border-slate-800"></tr></thead><tbody id="scenario-output-body" class="divide-y divide-slate-150 dark:divide-slate-800 font-medium"></tbody></table></div>
+
+                <!-- WATERFALL -->
+                <div class="mt-4 border-t border-slate-100 dark:border-slate-800/80 pt-5">
+                    <div class="flex justify-between items-center mb-3 cursor-pointer" onclick="window.toggleWaterfallTable()">
+                        <div><h3 class="text-[13px] font-extrabold text-slate-800 dark:text-slate-200 uppercase flex items-center gap-2"><i data-lucide="users" class="w-4.5 h-4.5 text-indigo-500"></i> Headcount Roll-Forward (FTE Waterfall)</h3></div>
+                        <i id="waterfall-collapse-icon" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200 rotate-180"></i>
+                    </div>
+                    <div id="waterfall-table-wrapper" class="transition-all duration-300 overflow-hidden">
+                        <div class="overflow-x-auto w-full rounded-xl border border-slate-100 dark:border-slate-800"><table class="w-full text-left text-[11px]"><thead><tr id="waterfall-header" class="bg-slate-50 dark:bg-slate-800 text-slate-500 font-bold border-b border-slate-200"></tr></thead><tbody id="waterfall-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DYNAMIC SPOTLIGHT -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <div><h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Projected Efficiency & Utilization Spotlight</h3></div>
+                    <select id="scenario-month-selector" onchange="window.updateScenarioSpotlight()" class="bg-slate-100 dark:bg-slate-800 text-xs font-bold p-1 px-3 rounded-lg border border-slate-200 dark:border-slate-700"></select>
+                </div>
+                <div id="efficiency-spotlight-container" class="grid grid-cols-1 md:grid-cols-3 gap-5"></div>
+            </div>
+
+            <!-- DYNAMIC VISUAL CHARTS -->
+            <div id="charts-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6"></div>
+
+            <!-- DYNAMIC MATH SECTION -->
+            <div class="bg-slate-100 dark:bg-[#101726] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 mb-6">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-3"><i data-lucide="calculator" class="w-5 h-5 text-indigo-400"></i> Staffing Capacity Calculations (<span id="math-month-label" class="font-bold text-indigo-500">--</span>)</h3>
+                <div id="math-sandbox-container" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+            </div>
+
+            <!-- EXECUTIVE SUMMARY -->
+            <div class="bg-blue-50/50 dark:bg-blue-950/20 border-l-4 border-blue-500 rounded-r-xl p-5 shadow-sm relative group mb-6">
+                <div class="flex justify-between items-start mb-3 cursor-pointer" onclick="window.toggleExecutiveSummary()">
+                    <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4.5 h-4.5 text-blue-600"></i><h3 class="text-[13px] font-extrabold text-blue-900 dark:text-blue-200 uppercase">Weekly Executive Summary Generator</h3><i id="exec-collapse-icon" data-lucide="chevron-down" class="w-4 h-4 text-blue-500 transition-transform"></i></div>
+                    <button onclick="event.stopPropagation(); window.copyExecutiveSummary();" class="text-[10px] font-bold bg-white dark:bg-slate-800 text-blue-600 border px-2.5 py-1.5 rounded-lg flex items-center gap-1.5"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Report</button>
+                </div>
+                <div id="executive-summary-content-wrapper" class="hidden transition-all duration-300 overflow-hidden"><div id="executive-summary-content" class="text-[13px] leading-relaxed font-medium bg-white dark:bg-slate-900 p-4 rounded-lg border"></div></div>
+            </div>
+
+            <!-- MASTER GRID -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <div class="flex justify-between items-center pb-4 border-b">
+                    <div><h3 class="text-sm font-bold">Clinical Forecast Master Grid</h3></div>
+                    <div class="flex gap-2"><button onclick="window.toggleForecastTable()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-xs font-bold rounded-lg border flex items-center gap-1.5"><i id="collapse-icon" data-lucide="chevron-down" class="w-4 h-4 transition-transform"></i><span id="collapse-btn-text">Expand Forecast Grid</span></button><button onclick="window.exportToCSV()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-xs font-bold rounded-lg border flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export Transposed CSV</button></div>
+                </div>
+                <div id="collapsible-table-wrapper" class="hidden transition-all duration-300 mt-4 overflow-hidden"><div class="overflow-x-auto w-full"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 border-b uppercase"><th class="py-3 px-4 font-bold">Month</th><th class="py-3 px-4 text-right">Census</th><th class="py-3 px-4 text-center bg-teal-50/25">Therapy Capacity</th><th class="py-3 px-4 text-right bg-teal-50/25">Therapy FTE +/-</th><th class="py-3 px-4 text-center bg-indigo-50/25">Coaching Capacity</th><th class="py-3 px-4 text-right bg-indigo-50/25">Coaching FTE +/-</th><th class="py-3 px-4 text-center bg-amber-50/25">Psych Capacity</th><th class="py-3 px-4 text-right bg-amber-50/25">Psych FTE +/- (100%)</th></tr></thead><tbody id="master-table-body"></tbody></table></div></div>
+                <div id="table-collapsed-status" class="py-4 text-center text-xs text-slate-400 italic">Forecast grid is collapsed. Click "Expand Forecast Grid" above to review all transposed rows.</div>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- TAB 2 CONTENT: STATE TELEHEALTH ROUTER (NEW SANDBOX)      -->
+        <!-- ========================================================= -->
+        <div id="view-states" class="hidden space-y-6 transition-all duration-200">
+            
+            <!-- STATE ROUTER CONTROLS & TIMELINE -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 mb-4 gap-4">
+                    <div>
+                        <h2 class="text-base font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                            <i data-lucide="map" class="w-5 h-5"></i>
+                            Telehealth Cross-Licensure Optimization Sandbox
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Visualize monthly state-level deficits and simulate reallocation overrides. Red alerts clear out instantly as you route capacity.</p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="window.undoAllocation()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold flex items-center gap-1"><i data-lucide="undo" class="w-3.5 h-3.5"></i> Undo (Ctrl-Z)</button>
+                        <button onclick="window.redoAllocation()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold flex items-center gap-1"><i data-lucide="redo" class="w-3.5 h-3.5"></i> Redo</button>
+                        <button onclick="window.runLicensureOptimizer()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-extrabold flex items-center gap-1.5"><i data-lucide="wand2" class="w-3.5 h-3.5"></i> Optimize Allocations</button>
+                        <button onclick="window.resetStateBaseline()" class="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-bold" title="Reset allocations to spreadsheet baseline"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Baseline</button>
+                    </div>
+                </div>
+
+                <!-- STATE CHRONOLOGICAL MATRIX HEATMAP -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200/60 dark:border-slate-800">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase tracking-wider font-extrabold border-b">
+                                <th class="py-2.5 px-4 sticky left-0 bg-slate-50 dark:bg-slate-800 z-10 w-24">State</th>
+                                <th class="py-2.5 px-3 text-center border-l">June</th>
+                                <th class="py-2.5 px-3 text-center border-l">July</th>
+                                <th class="py-2.5 px-3 text-center border-l">August</th>
+                                <th class="py-2.5 px-3 text-center border-l">September</th>
+                                <th class="py-2.5 px-3 text-center border-l">October</th>
+                                <th class="py-2.5 px-3 text-center border-l">November</th>
+                                <th class="py-2.5 px-3 text-center border-l bg-slate-100/50 dark:bg-slate-900/50">Total Gaps</th>
+                            </tr>
+                        </thead>
+                        <tbody id="state-heatmap-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 font-mono">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TWO-COLUMN WORK SPACE (STATE DETAILS VS PROVIDERS LIST) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left Inspector (Selected State) -->
+                <div class="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center border-b pb-3 mb-4">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5"><i data-lucide="shield-alert" class="text-indigo-500"></i> Selected State Details</h3>
+                            <span id="selected-state-pill" class="text-xs font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-3 py-1 rounded-full uppercase">MA</span>
+                        </div>
+                        <div class="space-y-4">
+                            <!-- Metrics -->
+                            <div class="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-850 p-3 rounded-xl border">
+                                <div><span class="text-[9px] font-bold text-slate-400 block uppercase">MTD Census</span><div id="inspector-census" class="text-base font-black">803</div></div>
+                                <div><span class="text-[9px] font-bold text-slate-400 block uppercase">FTE Surplus/Deficit</span><div id="inspector-deficit" class="text-base font-black text-rose-500">-4.90</div></div>
+                            </div>
+                            <!-- Licensed Providers currently assigned here -->
+                            <div>
+                                <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> Active Providers Assigned</h4>
+                                <div class="overflow-y-auto max-h-48 border rounded-lg divide-y divide-slate-100 dark:divide-slate-850" id="inspector-providers-list">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t">
+                        <p class="text-[11px] text-slate-400 leading-relaxed italic">Clicking any provider in this list allows you to instantly alter their state capacity allocation on the right.</p>
+                    </div>
+                </div>
+
+                <!-- Right Simulator (User database & Licensure Allocator) -->
+                <div class="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                    <div class="flex justify-between items-center border-b pb-3 mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><i data-lucide="shield" class="w-4 h-4 text-emerald-500"></i> Provider State Capacity Allocation Manager</h3>
+                            <p class="text-xs text-slate-500">Search and adjust allocations. Add new licenses dynamically using the selector below.</p>
+                        </div>
+                    </div>
+                    <!-- Search & Filters -->
+                    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                        <div class="relative flex-grow">
+                            <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
+                            <input id="provider-search" oninput="window.renderProvidersSimulator()" type="text" placeholder="Search provider name or active license..." class="w-full bg-slate-50 dark:bg-slate-900 border rounded-lg py-2 pl-9 pr-4 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
+                        </div>
+                    </div>
+                    <!-- Provider List Grid -->
+                    <div class="overflow-y-auto max-h-96 border rounded-xl divide-y divide-slate-100 dark:divide-slate-800" id="provider-allocator-grid">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- CUSTOM CONFIRMATION MODAL -->
+    <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <h3 id="confirm-modal-title" class="text-base font-bold text-slate-900 dark:text-white mb-2">Are you sure?</h3>
+            <p id="confirm-modal-message" class="text-sm text-slate-500 dark:text-slate-400 mb-6">This action cannot be undone.</p>
+            <div class="flex justify-end gap-2.5">
+                <button id="confirm-modal-cancel" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors">Cancel</button>
+                <button id="confirm-modal-action" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="mt-auto border-t border-slate-200 dark:border-slate-800 py-6 bg-white dark:bg-slate-950 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+            <p>&copy; 2026 Clinical Staffing Operations Cockpit. Optimized for sandboxed Google Sites embedding.</p>
+            <p class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-4 h-4 text-indigo-500"></i> Cloud Storage Synced</p>
+        </div>
+    </footer>
+
+    <!-- LOGIC SYSTEM (Firebase ES Module Update) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =================================================================================
+        // DYNAMIC UI GENERATOR (REDUCES HTML REPETITION BY 40%)
+        // =================================================================================
+        window.initializeDynamicUI = function() {
+            const disciplines = [
+                { id: 'therapy', name: 'Therapy', color: 'teal', icon: 'activity', ratio: 25 },
+                { id: 'coaching', name: 'Coaching', color: 'indigo', icon: 'smile', ratio: 22 },
+                { id: 'psychiatry', name: 'Psychiatry', color: 'amber', icon: 'stethoscope', ratio: 224, isPsych: true }
+            ];
+
+            // 1. Dynamic Scorecards Grid
+            const scContainer = document.getElementById('scorecards-container');
+            if (scContainer) {
+                scContainer.innerHTML = disciplines.map(d => {
+                    const isPsych = d.isPsych;
+                    const evalHtml = isPsych ? `
+                        <div class="grid grid-cols-2 gap-4 mt-2">
+                            <div class="border-r border-slate-150 dark:border-slate-800/60 pr-3">
+                                <h4 class="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wide mb-2">100% Census Model</h4>
+                                <div class="space-y-1.5 text-xs">
+                                    <div class="flex justify-between items-end border-b border-slate-100 dark:border-slate-800/60 pb-1"><span class="text-slate-500 text-[11px]">Census</span><span id="psych-census-100" class="font-bold text-slate-800 dark:text-slate-200">--</span></div>
+                                    <div class="flex justify-between items-end border-b border-slate-100 dark:border-slate-800/60 pb-1"><span class="text-slate-500 text-[11px]">Capacity</span><span id="psych-cap-100" class="font-bold text-slate-800 dark:text-slate-200">--</span></div>
+                                    <div class="flex justify-between items-end border-b border-slate-100 dark:border-slate-800/60 pb-1"><span class="text-slate-500 text-[11px]">Diff +/-</span><span id="psych-diff-100" class="font-extrabold text-sm">--</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-2">85% Census Target</h4>
+                                <div class="space-y-1.5 text-xs">
+                                    <div class="flex justify-between items-end border-b border-slate-100 dark:border-slate-800/60 pb-1"><span class="text-slate-500 text-[11px]">85% Target</span><span id="psych-census-85" class="font-bold text-slate-800 dark:text-slate-200">--</span></div>
+                                    <div class="flex justify-between items-end border-b border-slate-100 dark:border-slate-800/60 pb-1"><span class="text-slate-500 text-[11px]">Capacity</span><span id="psych-cap-85" class="font-bold text-slate-800 dark:text-slate-200">--</span></div>
+                                    <div class="flex justify-between items-end border-b border-slate-100 dark:border-slate-800/60 pb-1"><span class="text-slate-500 text-[11px]">Diff +/-</span><span id="psych-diff-85" class="font-extrabold text-sm">--</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-end border-b border-slate-100 dark:border-slate-800/60 pb-1"><span class="text-xs text-slate-500">Active Census</span><span id="${d.id}-census" class="font-bold text-slate-800 dark:text-slate-200">--</span></div>
+                            <div class="flex justify-between items-end border-b border-slate-100 dark:border-slate-800/60 pb-1"><span class="text-xs text-slate-500 flex items-center gap-1">87% Utilization Target</span><span id="${d.id}-utilization" class="font-bold text-indigo-500">--</span></div>
+                            <div class="flex justify-between items-end border-b border-slate-100 dark:border-slate-800/60 pb-1"><span class="text-xs text-slate-500">${d.name} Capacity</span><span id="${d.id}-capacity" class="font-bold text-slate-800 dark:text-slate-200">--</span></div>
+                            <div class="flex justify-between items-end border-b border-slate-100 dark:border-slate-800/60 pb-1"><span class="text-xs text-slate-500">Difference +/-</span><span id="${d.id}-difference" class="font-extrabold">--</span></div>
+                        </div>
+                    `;
+
+                    const footerHtml = isPsych ? `
+                        <div class="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-1.5">
+                            <div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-400 uppercase tracking-wider">FTE +/- (100%):</span><span id="psych-fte-100" class="text-2xl font-black">--</span></div>
+                            <div class="flex items-center justify-between"><span class="text-xs font-bold text-indigo-500 uppercase tracking-wide">FTE +/- (85%):</span><span id="psych-fte-85" class="text-2xl font-black">--</span></div>
+                        </div>
+                    ` : `
+                        <div class="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between"><span class="text-xs font-bold text-slate-400 uppercase tracking-wider">FTE Surplus / Deficit:</span><span id="${d.id}-fte-diff" class="text-2xl font-black">--</span></div>
+                    `;
+
+                    return `
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                        <div class="absolute top-0 left-0 right-0 h-1.5 bg-${d.color}-500"></div>
+                        <div>
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="p-2 bg-${d.color}-500/10 text-${d.color}-600 dark:text-${d.color}-400 rounded-lg">
+                                        <i data-lucide="${d.icon}" class="w-5 h-5"></i>
+                                    </span>
+                                    <span class="font-extrabold text-sm tracking-tight text-slate-800 dark:text-slate-100">${d.name}</span>
+                                </div>
+                                <span id="${d.id}-status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full"></span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800/40 p-1.5 rounded-xl border border-slate-100 dark:border-slate-850 text-center mb-2">
+                                <div><span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Headcount</span><div id="${d.id}-static-hired" class="text-sm font-bold text-slate-800 dark:text-white">--</div></div>
+                                <div><span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Functional FTE</span><div id="${d.id}-static-functional" class="text-sm font-bold text-slate-800 dark:text-white">--</div></div>
+                                <div><span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Network Eff.</span><div id="${d.id}-static-eff" class="text-sm font-bold text-${d.color}-600 dark:text-${d.color}-400">--</div></div>
+                            </div>
+                            ${evalHtml}
+                        </div>
+                        ${footerHtml}
+                    </div>
+                    `;
+                }).join('');
+            }
+
+            // 2. Dynamic Efficiency Spotlights
+            const spotContainer = document.getElementById('efficiency-spotlight-container');
+            if (spotContainer) {
+                spotContainer.innerHTML = disciplines.map(d => `
+                    <div class="bg-slate-50 dark:bg-slate-850 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="text-xs font-bold text-${d.color}-600">${d.name} Projection</h4>
+                            <span id="eff-${d.id}-label" class="text-[10px] font-bold">--</span>
+                        </div>
+                        <div class="space-y-1 text-xs mb-3 font-mono">
+                            <div class="flex justify-between"><span>Census Demand</span><span id="eff-${d.id}-census">--</span></div>
+                            <div class="flex justify-between"><span>Adjusted Capacity</span><span id="eff-${d.id}-cap">--</span></div>
+                            <div class="flex justify-between"><span>Implied Functional FTE</span><span id="eff-${d.id}-fte">--</span></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[9px] font-bold mb-1">
+                                <span>Efficiency <span id="eff-${d.id}-tgt-label">(${d.id==='psychiatry'?'85%':'87%'})</span></span>
+                                <span id="eff-${d.id}-pct-text">--%</span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full relative overflow-hidden">
+                                <div id="eff-${d.id}-bar" class="h-full bg-${d.color}-500 transition-all duration-500" style="width: 0%"></div>
+                                <div id="eff-${d.id}-marker" class="absolute top-0 bottom-0 w-0.5 bg-black dark:bg-white z-10" style="left: ${d.id==='psychiatry'?85:87}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // 3. Dynamic Visual Charts Grid
+            const chartsContainer = document.getElementById('charts-container');
+            if (chartsContainer) {
+                chartsContainer.innerHTML = disciplines.map(d => `
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-${d.color}-500"></span>
+                                <h3 class="text-sm font-bold text-slate-900 dark:text-white">${d.name} Capacity vs. Target ${d.isPsych ? '(85%)' : ''}</h3>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-mono">${d.color.charAt(0).toUpperCase() + d.color.slice(1)} (Cap: ${d.ratio})</span>
+                        </div>
+                        <div class="h-64 w-full relative"><canvas id="${d.id}CapacityChart"></canvas></div>
+                    </div>
+                `).join('');
+            }
+
+            // 4. Dynamic Math Sandbox
+            const mathContainer = document.getElementById('math-sandbox-container');
+            if (mathContainer) {
+                mathContainer.innerHTML = disciplines.map(d => `
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-4.5 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-${d.color}-600 dark:text-${d.color}-400 uppercase tracking-wide block mb-3">${d.name} Formulation</span>
+                            <div class="space-y-3 font-mono text-xs text-slate-600 dark:text-slate-300">
+                                <div><span class="text-slate-400 text-[10px] block font-sans" id="math-${d.id}-demand-label">1. Target</span><div id="math-${d.id}-step1">--</div></div>
+                                <div><span class="text-slate-400 text-[10px] block font-sans">2. Active Caseload Capacity</span><div id="math-${d.id}-step2">--</div></div>
+                                <div><span class="text-slate-400 text-[10px] block font-sans">3. Client Margin (Capacity - Buffered)</span><div id="math-${d.id}-step3">--</div></div>
+                                <div><span class="text-slate-400 text-[10px] block font-sans">4. FTE +/- (Client Margin / ${d.ratio})</span><div id="math-${d.id}-step4">--</div></div>
+                            </div>
+                        </div>
+                        <div class="pt-3 mt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">${d.name} FTE +/-:</span>
+                            <strong id="math-${d.id}-result" class="text-sm font-mono">--</strong>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        };
+
+
+        // =================================================================================
+        // STEP 4: PASTE YOUR FIREBASE CONFIG HERE
+        // Replace this entire block with the config from your "Staffing Needs" project
+        // =================================================================================
+        let userFirebaseConfig = {
+            apiKey: "AIzaSyD-pLAF8W1_huYDy7F1DBaTe3QyufVyvCQ",
+            authDomain: "staffing-needs.firebaseapp.com",
+            projectId: "staffing-needs",
+            storageBucket: "staffing-needs.firebasestorage.app",
+            messagingSenderId: "792528484030",
+            appId: "1:792528484030:web:99826c02632061941b50ef"
+        };
+
+        // Internal setup (Ensures it works inside the current visual tool as well)
+        let firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : userFirebaseConfig;
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'staffing-needs-app';
+        let currentUser = null;
+
+        // Firebase Auth Initialization
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) setupFirebaseListener();
+        });
+
+        // Firebase Sync Listener
+        window.setupFirebaseListener = function() {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_strategy', 'master_plan');
+            
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    window.scenarioHires = data.scenarioHires || window.scenarioHires;
+                    window.providerRamps = data.providerRamps || window.providerRamps;
+                    window.strategicAssumptions = data.strategicAssumptions || window.strategicAssumptions;
+                    window.utilizationTargets = data.utilizationTargets || window.utilizationTargets;
+                    
+                    if (window.computedMonths.length > 0) {
+                        try { window.renderAssumptionsTable(); } catch(e){}
+                        try { window.renderRampTable(); } catch(e){}
+                        try { window.renderUtilTable(); } catch(e){}
+                        try { window.renderScenarioInputs(); } catch(e){}
+                        try { window.renderScenarioOutput(); } catch(e){}
+                        try { window.renderWaterfallTable(); } catch(e){}
+                        try { window.renderTimeline(); } catch(e){}
+                        try { window.updateDashboardDisplay(); } catch(e){}
+                        try { window.renderExecutiveSummary(); } catch(e){}
+                    }
+                }
+            }, (error) => {
+                console.error("Firebase listen error:", error);
+            });
+        };
+
+        // Pushing to Cloud
+        window.saveAllScenarios = async function() {
+            window.previewScenario(); 
+            window.showAutoSaveIndicator();
+            
+            if (!currentUser) {
+                console.warn("Authentication failed, cannot save to Cloud.");
+                return;
+            }
+
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_strategy', 'master_plan');
+            
+            try {
+                await setDoc(docRef, {
+                    scenarioHires: window.scenarioHires,
+                    providerRamps: window.providerRamps,
+                    strategicAssumptions: window.strategicAssumptions,
+                    utilizationTargets: window.utilizationTargets,
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: currentUser.uid
+                }, { merge: true });
+                
+                window.showSuccessBanner("Strategy saved to Cloud!");
+            } catch (error) {
+                console.error("Error saving to Firebase:", error);
+                window.showWarningBanner("Failed to save to cloud.");
+            }
+        };
+
+        // -------------------------------------------------------------------------
+        // Global variables & Constants
+        // -------------------------------------------------------------------------
+        const DEFAULT_RAMPS = {
+            therapy: [5, 17, 20, 25, 25, 25, 25, 25, 25, 25, 25, 25],
+            therapyPre: [5, 15, 20, 23, 23, 23, 23, 23, 23, 23, 23, 23],
+            coaching: [5, 17, 20, 22, 22, 22, 22, 22, 22, 22, 22, 22],
+            psych25: [12, 35, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56],
+            psych50: [15, 35, 60, 85, 112, 112, 112, 112, 112, 112, 112, 112]
+        };
+
+        const DEFAULT_ASSUMPTIONS = {
+            therapy: { attrition: 0.0, buffer: 0.0 },
+            coaching: { attrition: 0.0, buffer: 0.0 },
+            psychiatry: { attrition: 0.0, buffer: 0.0 }
+        };
+
+        const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/1V_WA-1LObeHDMdg7WUmpwmMGGDY6hlBPBnuqGwckH_0/export?format=csv&gid=1421084607';
+        const DEFAULT_LOOKER_GID = '922377958';
+        const DEFAULT_SD_GID = '975777941';
+
+        const STORAGE_KEY_URL = 'clinical_staffing_csv_url_v3';
+        const STORAGE_KEY_LOOKER_GID = 'clinical_staffing_looker_gid_v1';
+        const STORAGE_KEY_SD_GID = 'clinical_staffing_sd_gid_v1';
+        const STORAGE_KEY_START_MONTH = 'clinical_staffing_start_month_v1';
+        const STORAGE_KEY_EXCLUSIONS = 'clinical_staffing_exclusions_v2';
+        const STORAGE_KEY_MUTED_ALERTS = 'clinical_staffing_muted_alerts_v2';
+
+        window.csvRawData = [];
+        window.computedMonths = [];
+        window.activeMonthIdx = 0;
+        window.scenarioSpotlightIdx = 0;
+        window.isTableCollapsed = true; 
+        window.isExecSummaryCollapsed = true; 
+        window.isTriggersCollapsed = true;
+        window.globalActualCensus = null; 
+
+        // Active State Selection
+        window.selectedStateCode = 'MA';
+
+        // Core App Data
+        window.scenarioHires = {};
+        window.providerRamps = JSON.parse(JSON.stringify(DEFAULT_RAMPS));
+        window.strategicAssumptions = JSON.parse(JSON.stringify(DEFAULT_ASSUMPTIONS));
+        window.utilizationTargets = { therapy: [], coaching: [], psychiatry: [] };
+
+        window.ignoredMonths = { Therapy: {}, Coaching: {}, Psychiatry: {} };
+        window.mutedAlerts = { Therapy: {}, Coaching: {}, Psychiatry: {} };
+
+        // Real State List Ingestion & Fallback Setup (June-December Matrix matching user S&D snapshot)
+        window.statesList = ['MA', 'NJ', 'NH', 'CT', 'NY', 'PA', 'RI', 'ME', 'VA', 'OH', 'TX', 'IL', 'DC', 'FL', 'NC', 'GA', 'SC', 'MD', 'DE', 'WV', 'MO', 'WI', 'NV', 'AZ', 'CO', 'NM', 'MT', 'OK'];
+        
+        window.stateFTEBaseline = {
+            MA: [2.25, 0.74, 1.31, 1.09, -0.18, -2.11, -4.90],
+            NJ: [-0.12, -0.11, 1.64, 1.35, 0.91, 1.17, 0.42],
+            NH: [0.91, 0.65, 0.53, 0.34, -0.26, -0.77, -1.29],
+            CT: [0.37, 0.19, 0.01, 0.13, -0.09, -0.08, -0.23],
+            NY: [-0.69, -1.39, 0.36, 0.73, 0.54, 0.07, -0.70],
+            PA: [-0.09, 0.10, 0.55, 0.61, 0.68, 1.02, 1.10],
+            RI: [0.45, 0.22, 0.55, 0.13, 0.07, -0.05, -0.09],
+            ME: [0.38, 0.68, 0.51, 0.38, 0.14, -0.13, -0.38],
+            VA: [0.71, 0.39, 0.25, -0.10, -0.12, -0.50, -0.84],
+            OH: [0.26, 0.43, 0.35, 0.28, 0.09, -0.06, -0.30],
+            TX: [0.08, 0.25, 0.20, 0.10, 0.08, -0.52, -1.11],
+            IL: [0.25, 0.13, 0.48, 0.20, 0.08, -0.18, -0.66],
+            DC: [0.09, 0.11, 0.04, -0.08, -0.14, -0.22, -0.34],
+            FL: [0.22, 0.28, 0.48, 0.36, -0.04, -0.24, -0.62],
+            NC: [0.16, 0.28, 0.28, 0.18, -0.10, -0.22, -0.32],
+            GA: [0.07, 0.01, -0.02, -0.09, 0.19, 0.26, 0.22],
+            SC: [0.07, 0.01, -0.02, -0.09, 0.19, 0.26, 0.22]
+        };
+
+        window.stateCensusBaseline = {
+            MA: [749, 711, 718, 746, 764, 803, 842],
+            NJ: [208, 197, 202, 218, 224, 241, 253],
+            NH: [86, 87, 92, 105, 115, 129, 143],
+            CT: [74, 69, 70, 72, 78, 86, 93],
+            NY: [245, 238, 241, 251, 261, 279, 297],
+            PA: [85, 85, 95, 104, 109, 119, 130],
+            RI: [27, 29, 30, 35, 40, 44, 48],
+            ME: [27, 29, 35, 41, 46, 53, 59],
+            VA: [83, 85, 90, 92, 99, 107, 115],
+            OH: [36, 35, 36, 38, 40, 47, 49],
+            TX: [43, 52, 62, 70, 79, 93, 105],
+            IL: [21, 24, 30, 40, 50, 64, 72]
+        };
+
+        // Populate zeros for remaining unlisted expansion states
+        window.statesList.forEach(st => {
+            if (!window.stateFTEBaseline[st]) window.stateFTEBaseline[st] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+            if (!window.stateCensusBaseline[st]) window.stateCensusBaseline[st] = [0, 0, 0, 0, 0, 0, 0];
+        });
+
+        // User Licensures Database Simulated State
+        window.providersBaseline = [
+            { id: 19, name: 'Maya Massing-Schaffer', email: 'maya.massing-schaffer@instride.health', role: 'Therapist', state: 'NJ', capacity: 1.0 },
+            { id: 33, name: 'Katie Pullicino', email: 'katie.pullicino@instride.health', role: 'Therapist', state: 'MA', capacity: 0.50 },
+            { id: 35, name: 'Katie Pullicino', email: 'katie.pullicino@instride.health', role: 'Therapist', state: 'CT', capacity: 0.50 },
+            { id: 57, name: 'Alyse Randolph', email: 'alyse.randolph@instride.health', role: 'Therapist', state: 'RI', capacity: 0.80 },
+            { id: 58, name: 'Alyse Randolph', email: 'alyse.randolph@instride.health', role: 'Therapist', state: 'MA', capacity: 0.20 },
+            { id: 101, name: 'Bell Jones', email: 'bell.jones@instride.health', role: 'Therapist', state: 'NJ', capacity: 0.50 },
+            { id: 102, name: 'Bell Jones', email: 'bell.jones@instride.health', role: 'Therapist', state: 'DE', capacity: 0.10 },
+            { id: 103, name: 'Bell Jones', email: 'bell.jones@instride.health', role: 'Therapist', state: 'PA', capacity: 0.40 }
+        ];
+
+        // Active State Simulation States
+        window.stateSimulatedFTE = JSON.parse(JSON.stringify(window.stateFTEBaseline));
+        window.simulatedProviders = JSON.parse(JSON.stringify(window.providersBaseline));
+
+        // Simulation History Stack (Undo/Redo System)
+        window.stateUndoStack = [];
+        window.stateRedoStack = [];
+
+        window.staticMetrics = {
+            Therapy: { hired: '95.4', functional: '84.22', efficiency: '72.19%' },
+            Coaching: { hired: '96', functional: '91', efficiency: '76.13%' },
+            Psychiatry: { hired: '21', functional: '8.05', efficiency: '91.70%' }
+        };
+
+        window.therapyChartInstance = null;
+        window.coachingChartInstance = null;
+        window.psychiatryChartInstance = null;
+        window.currentScenarioFilters = ['therapy']; 
+        window.isWaterfallCollapsed = false;
+
+        const mockSpreadsheetBackup = [
+            [], [], [], [], [], [], [], [],
+            ["Therapy", "Headcount", "Forecast", "", "", "", "", "June", "July", "August", "September", "October", "November", "December"],
+            ["", "95.4", "Census", "", "", "", "", "1588", "1715", "1782", "1860", "1989", "2112", "2301"],
+            ["", "", "87% Utilization", "", "", "", "", "1825", "1971", "2048", "2138", "2286", "2428", "2530"],
+            ["Functional FTE", "", "Therapy Capacity", "", "", "", "", "1979", "2094", "2136", "2206", "2220", "2222", "2222"],
+            ["84.22", "", "Difference +/-", "", "", "", "", "154", "122", "87", "68", "-67", "-205", "-308"],
+            ["", "", "FTE +/-", "", "", "", "", "6.1", "4.9", "3.5", "2.7", "-2.7", "-8.2", "-12.3"],
+            ["72.19%", "", "Network Efficiency %", "", "", "", "", "", "", "", "", "", ""],
+            [],
+            ["Coaching", "Headcount", "Forecast", "", "", "", "", "June", "July", "August", "September", "October", "November", "December"],
+            ["", "96", "Census", "", "", "", "", "1588", "1715", "1782", "1860", "1989", "2112", "2301"],
+            ["", "", "87% Utilization", "", "", "", "", "1825", "1971", "2048", "2138", "2286", "2428", "2530"],
+            ["Functional FTE", "", "Coach Capacity", "", "", "", "", "1929", "1997", "2095", "2199", "2182", "2105", "2105"],
+            ["91", "", "Difference +/-", "", "", "", "", "104", "26", "47", "61", "-104", "-323", "-425"],
+            ["", "", "FTE +/-", "", "", "", "", "4.7", "1.2", "2.1", "2.8", "-4.7", "-14.7", "-19.3"],
+            ["76.13%", "", "Network Efficiency %", "", "", "", "", "", "", "", "", "", ""],
+            [],
+            ["Psychiatry", "Headcount", "Forecast", "", "", "", "", "June", "July", "August", "September", "October", "November", "December"],
+            ["", "21", "Census", "", "", "", "", "1588", "1715", "1782", "1860", "1989", "2112", "2301"],
+            [],
+            ["Functional FTE", "", "Psych. Capacity", "", "", "", "", "1874", "1673", "1740", "1839", "1993", "2189", "2307"],
+            ["8.05", "", "Difference +/-", "", "", "", "", "286", "-42", "-42", "-21", "4", "77", "6"],
+            ["", "", "FTE +/-", "", "", "", "", "1.28", "-0.19", "-0.19", "-0.10", "0.02", "0.34", "0.03"],
+            ["91.70%", "", "Network Efficiency %", "", "", "", "", "", "", "", "", "", ""]
+        ];
+
+        // -------------------------------------------------------------------------
+        // Initialization & Data Loading
+        // -------------------------------------------------------------------------
+        document.addEventListener("DOMContentLoaded", () => {
+            // FIRE INITIALIZATION SCRIPT FIRST TO GENERATE HTML DOM ELEMENTS
+            window.initializeDynamicUI();
+            
+            const startMonthSetting = localStorage.getItem(STORAGE_KEY_START_MONTH) || 'Auto';
+            const startMonthInput = document.getElementById('start-month-input');
+            if (startMonthInput) startMonthInput.value = startMonthSetting;
+
+            try { ignoredMonths = JSON.parse(localStorage.getItem(STORAGE_KEY_EXCLUSIONS)) || ignoredMonths; } catch(e) {}
+            try { mutedAlerts = JSON.parse(localStorage.getItem(STORAGE_KEY_MUTED_ALERTS)) || mutedAlerts; } catch(e) {}
+            
+            const savedUrl = localStorage.getItem(STORAGE_KEY_URL);
+            const urlInput = document.getElementById('csv-url-input');
+            if (urlInput) urlInput.value = savedUrl ? savedUrl : DEFAULT_CSV_URL;
+
+            window.fetchAndProcess();
+            lucide.createIcons(); // Render lucide icons within dynamically generated HTML
+        });
+
+        // -------------------------------------------------------------------------
+        // Dynamic Multi-Tab Loader & Router UI Setup
+        // -------------------------------------------------------------------------
+        window.switchTab = function(tabName) {
+            const globalBtn = document.getElementById('tab-btn-global');
+            const statesBtn = document.getElementById('tab-btn-states');
+            const globalView = document.getElementById('view-global');
+            const statesView = document.getElementById('view-states');
+
+            if (tabName === 'global') {
+                globalBtn.className = "px-4 py-1.5 text-xs font-bold rounded-lg shadow-sm bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 transition-all flex items-center gap-1.5";
+                statesBtn.className = "px-4 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all flex items-center gap-1.5";
+                globalView.classList.remove('hidden');
+                statesView.classList.add('hidden');
+            } else {
+                statesBtn.className = "px-4 py-1.5 text-xs font-bold rounded-lg shadow-sm bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 transition-all flex items-center gap-1.5";
+                globalBtn.className = "px-4 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all flex items-center gap-1.5";
+                globalView.classList.add('hidden');
+                statesView.classList.remove('hidden');
+                window.renderStateHeatmap();
+                window.renderInspectorState();
+                window.renderProvidersSimulator();
+            }
+            lucide.createIcons();
+        };
+
+        // Custom Modal Confirmation Assistant
+        window.customConfirm = function(title, message, onConfirm) {
+            const modal = document.getElementById('confirm-modal');
+            const titleEl = document.getElementById('confirm-modal-title');
+            const msgEl = document.getElementById('confirm-modal-message');
+            const cancelBtn = document.getElementById('confirm-modal-cancel');
+            const actionBtn = document.getElementById('confirm-modal-action');
+            
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            modal.classList.remove('hidden');
+            
+            const close = () => {
+                modal.classList.add('hidden');
+                cancelBtn.removeEventListener('click', onCancel);
+                actionBtn.removeEventListener('click', onOk);
+            };
+            
+            const onCancel = () => close();
+            const onOk = () => {
+                close();
+                onConfirm();
+            };
+            
+            cancelBtn.addEventListener('click', onCancel);
+            actionBtn.addEventListener('click', onOk);
+        };
+
+        // Push state simulation onto Undo Stack
+        window.pushStateToUndoStack = function() {
+            window.stateUndoStack.push({
+                simulatedProviders: JSON.parse(JSON.stringify(window.simulatedProviders)),
+                stateSimulatedFTE: JSON.parse(JSON.stringify(window.stateSimulatedFTE))
+            });
+            window.stateRedoStack = []; // Clear redo stack on new action
+        };
+
+        window.undoAllocation = function() {
+            if (window.stateUndoStack.length === 0) {
+                window.showWarningBanner("Nothing left to undo!");
+                return;
+            }
+            const prev = window.stateUndoStack.pop();
+            window.stateRedoStack.push({
+                simulatedProviders: JSON.parse(JSON.stringify(window.simulatedProviders)),
+                stateSimulatedFTE: JSON.parse(JSON.stringify(window.stateSimulatedFTE))
+            });
+            window.simulatedProviders = prev.simulatedProviders;
+            window.stateSimulatedFTE = prev.stateSimulatedFTE;
+            window.renderStateHeatmap();
+            window.renderInspectorState();
+            window.renderProvidersSimulator();
+            window.showSuccessBanner("Allocation reversed successfully!");
+        };
+
+        window.redoAllocation = function() {
+            if (window.stateRedoStack.length === 0) {
+                window.showWarningBanner("Nothing left to redo!");
+                return;
+            }
+            const next = window.stateRedoStack.pop();
+            window.stateUndoStack.push({
+                simulatedProviders: JSON.parse(JSON.stringify(window.simulatedProviders)),
+                stateSimulatedFTE: JSON.parse(JSON.stringify(window.stateSimulatedFTE))
+            });
+            window.simulatedProviders = next.simulatedProviders;
+            window.stateSimulatedFTE = next.stateSimulatedFTE;
+            window.renderStateHeatmap();
+            window.renderInspectorState();
+            window.renderProvidersSimulator();
+            window.showSuccessBanner("Allocation redone!");
+        };
+
+        window.resetStateBaseline = function() {
+            window.customConfirm(
+                "Reset State Allocations",
+                "Are you sure you want to discard all active state simulated overrides?",
+                () => {
+                    window.stateSimulatedFTE = JSON.parse(JSON.stringify(window.stateFTEBaseline));
+                    window.simulatedProviders = JSON.parse(JSON.stringify(window.providersBaseline));
+                    window.stateUndoStack = [];
+                    window.stateRedoStack = [];
+                    window.renderStateHeatmap();
+                    window.renderInspectorState();
+                    window.renderProvidersSimulator();
+                    window.showSuccessBanner("State allocation sandbox reset to baseline values!");
+                }
+            );
+        };
+
+        // Render State Heatmap Matrix
+        window.renderStateHeatmap = function() {
+            const tbody = document.getElementById('state-heatmap-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            window.statesList.forEach(state => {
+                const tr = document.createElement('tr');
+                const isSelected = window.selectedStateCode === state;
+                tr.className = `hover:bg-slate-100/50 dark:hover:bg-slate-800/40 cursor-pointer border-b ${isSelected ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''}`;
+                tr.onclick = () => window.selectState(state);
+
+                let totalGaps = 0;
+                let cellsHtml = `<td class="py-2 px-4 font-bold sticky left-0 z-10 ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400' : 'bg-white dark:bg-slate-900'}">${state}</td>`;
+                
+                // Show 7 Months (June - Dec)
+                for (let i = 0; i < 7; i++) {
+                    const val = window.stateSimulatedFTE[state] ? window.stateSimulatedFTE[state][i] || 0 : 0;
+                    totalGaps += (val < 0 ? val : 0);
+                    
+                    let colorClass = 'text-slate-500';
+                    let bgClass = 'transparent';
+                    if (val < -2.0) { colorClass = 'text-rose-700 dark:text-rose-400 font-extrabold'; bgClass = 'bg-rose-500/10 dark:bg-rose-500/5'; }
+                    else if (val < 0) { colorClass = 'text-orange-600 dark:text-orange-400 font-semibold'; bgClass = 'bg-orange-500/10 dark:bg-orange-500/5'; }
+                    else if (val > 0.5) { colorClass = 'text-teal-600 dark:text-teal-400 font-semibold'; bgClass = 'bg-teal-500/10 dark:bg-teal-500/5'; }
+
+                    cellsHtml += `<td class="py-2 px-3 text-center border-l ${bgClass} ${colorClass}">${val >= 0 ? '+' : ''}${val.toFixed(2)}</td>`;
+                }
+
+                cellsHtml += `<td class="py-2 px-3 text-center border-l bg-slate-50/50 dark:bg-slate-800/30 font-bold ${totalGaps < 0 ? 'text-rose-600' : 'text-slate-400'}">${totalGaps.toFixed(2)}</td>`;
+                tr.innerHTML = cellsHtml;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.selectState = function(state) {
+            window.selectedStateCode = state;
+            window.renderStateHeatmap();
+            window.renderInspectorState();
+        };
+
+        // Render State Inspector
+        window.renderInspectorState = function() {
+            const state = window.selectedStateCode;
+            document.getElementById('selected-state-pill').textContent = state;
+
+            const baseValList = window.stateSimulatedFTE[state] || [0,0,0,0,0,0,0];
+            const novemberGap = baseValList[5] || 0; // Nov is month index 5
+            const censusList = window.stateCensusBaseline[state] || [0,0,0,0,0,0,0];
+            const activeCensus = censusList[5] || 0;
+
+            document.getElementById('inspector-census').textContent = activeCensus.toLocaleString() + " patients";
+            
+            const inspectorDeficit = document.getElementById('inspector-deficit');
+            inspectorDeficit.textContent = (novemberGap >= 0 ? '+' : '') + novemberGap.toFixed(2) + " FTE";
+            inspectorDeficit.className = "text-base font-black " + (novemberGap >= 0 ? 'text-teal-600' : 'text-rose-600');
+
+            // Find Providers licensed & allocated to this state
+            const listContainer = document.getElementById('inspector-providers-list');
+            listContainer.innerHTML = '';
+
+            const mappedProviders = window.simulatedProviders.filter(p => p.state === state);
+            if (mappedProviders.length === 0) {
+                listContainer.innerHTML = `<div class="py-4 text-center text-xs text-slate-400 italic">No providers currently allocated to ${state}</div>`;
+            } else {
+                mappedProviders.forEach(p => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center p-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer";
+                    row.onclick = () => window.focusProvider(p.name);
+                    row.innerHTML = `
+                        <div class="text-xs">
+                            <div class="font-bold text-slate-800 dark:text-slate-200">${p.name}</div>
+                            <div class="text-[10px] text-slate-400">${p.email}</div>
+                        </div>
+                        <span class="text-xs font-bold text-indigo-500">${(p.capacity * 100).toFixed(0)}% Allocation</span>
+                    `;
+                    listContainer.appendChild(row);
+                });
+            }
+        };
+
+        window.focusProvider = function(name) {
+            const search = document.getElementById('provider-search');
+            if (search) {
+                search.value = name;
+                window.renderProvidersSimulator();
+            }
+        };
+
+        // Render Providers Allocation Simulator (Tab 2)
+        window.renderProvidersSimulator = function() {
+            const container = document.getElementById('provider-allocator-grid');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const searchVal = document.getElementById('provider-search').value.toLowerCase();
+
+            // Group flattened looker entries by provider name
+            const providersMap = {};
+            window.simulatedProviders.forEach(p => {
+                if (!providersMap[p.name]) {
+                    providersMap[p.name] = {
+                        name: p.name,
+                        email: p.email,
+                        role: p.role,
+                        allocations: []
+                    };
+                }
+                providersMap[p.name].allocations.push({ state: p.state, capacity: p.capacity });
+            });
+
+            let renderedCount = 0;
+            Object.values(providersMap).forEach(prov => {
+                if (searchVal && !prov.name.toLowerCase().includes(searchVal) && !prov.allocations.some(a => a.state.toLowerCase().includes(searchVal))) {
+                    return;
+                }
+                renderedCount++;
+
+                const totalAllocated = prov.allocations.reduce((acc, current) => acc + current.capacity, 0);
+                const isOverAllocation = totalAllocated > 1.05; // floating point buffer
+                const totalAllocatedPct = Math.round(totalAllocated * 100);
+
+                const card = document.createElement('div');
+                card.className = "p-4 space-y-3";
+                
+                let stateInputsHtml = '';
+                prov.allocations.forEach(alloc => {
+                    stateInputsHtml += `
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-extrabold w-10 text-slate-500 uppercase">${alloc.state}</span>
+                            <input type="range" min="0" max="1" step="0.05" value="${alloc.capacity}" 
+                                oninput="window.updateAllocationSimulation('${provNameEscape(prov.name)}', '${alloc.state}', this.value)" 
+                                class="flex-grow h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer accent-indigo-500">
+                            <span class="text-xs font-mono font-bold w-12 text-right">${(alloc.capacity * 100).toFixed(0)}%</span>
+                        </div>
+                    `;
+                });
+
+                // Licenses limit check
+                const activeLicenses = provLicensingStates(prov.name);
+                const isLicenseWarning = activeLicenses.length > 4;
+
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                        <div>
+                            <h4 class="text-xs font-extrabold text-slate-800 dark:text-slate-100">${prov.name}</h4>
+                            <p class="text-[10px] text-slate-400">${prov.email} | ${prov.role}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${isLicenseWarning ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}">
+                                ${activeLicenses.length} Licenses ${isLicenseWarning ? '(Over operational guideline)' : ''}
+                            </span>
+                            <span class="text-xs font-black ${isOverAllocation ? 'text-rose-500 animate-pulse' : 'text-emerald-500'}">
+                                Total: ${totalAllocatedPct}% ${isOverAllocation ? '(Over Allocation)' : ''}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-850">
+                        ${stateInputsHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            if (renderedCount === 0) {
+                container.innerHTML = `<div class="py-12 text-center text-xs text-slate-400 italic">No providers found matching your filter criteria</div>`;
+            }
+        };
+
+        function provNameEscape(name) {
+            return name.replace(/'/g, "\\'");
+        }
+
+        function provLicensingStates(name) {
+            return window.simulatedProviders.filter(p => p.name === name).map(p => p.state);
+        }
+
+        window.updateAllocationSimulation = function(providerName, state, val) {
+            window.pushStateToUndoStack();
+
+            const parsedVal = parseFloat(val);
+            const target = window.simulatedProviders.find(p => p.name === providerName && p.state === state);
+            if (target) {
+                const diff = parsedVal - target.capacity;
+                target.capacity = parsedVal;
+
+                // Dynamically offset the corresponding state's simulated surplus/deficit
+                if (window.stateSimulatedFTE[state]) {
+                    // Update November and upcoming months
+                    for (let i = 0; i < 7; i++) {
+                        window.stateSimulatedFTE[state][i] += diff;
+                    }
+                }
+                
+                window.renderStateHeatmap();
+                window.renderInspectorState();
+                window.renderProvidersSimulator();
+            }
+        };
+
+        // Automatic Suggestion Engine to optimize re-allocations
+        window.runLicensureOptimizer = function() {
+            window.pushStateToUndoStack();
+            let optimizationMade = false;
+
+            // Step 1: Scan for states with November deficits
+            window.statesList.forEach(deficitState => {
+                const stateGaps = window.stateSimulatedFTE[deficitState] || [0,0,0,0,0,0,0];
+                let gapFTE = stateGaps[5]; // November is index 5
+                
+                if (gapFTE < 0) {
+                    // Step 2: Find fully licensed providers holding this state's license who have capacity sitting elsewhere
+                    const candidateProviders = window.simulatedProviders.filter(p => p.state === deficitState);
+                    
+                    candidateProviders.forEach(p => {
+                        // Find other state allocations for the same provider
+                        const peerAllocations = window.simulatedProviders.filter(peer => peer.name === p.name && peer.state !== deficitState);
+                        
+                        peerAllocations.forEach(peer => {
+                            if (peer.capacity > 0.1 && gapFTE < 0) {
+                                // Shift allocation
+                                const shiftVal = Math.min(peer.capacity, Math.abs(gapFTE));
+                                peer.capacity -= shiftVal;
+                                p.capacity += shiftVal;
+
+                                // Recalculate states timelines
+                                for (let idx = 0; idx < 7; idx++) {
+                                    window.stateSimulatedFTE[peer.state][idx] -= shiftVal;
+                                    window.stateSimulatedFTE[deficitState][idx] += shiftVal;
+                                }
+
+                                gapFTE += shiftVal;
+                                optimizationMade = true;
+                            }
+                        });
+                    });
+                }
+            });
+
+            if (optimizationMade) {
+                window.renderStateHeatmap();
+                window.renderInspectorState();
+                window.renderProvidersSimulator();
+                window.showSuccessBanner("Licensure optimization engine complete! Rebalanced allocations to close high-risk deficits.");
+            } else {
+                window.showWarningBanner("All active state allocations are already optimized. No surplus capacity can be dynamically reallocated.");
+            }
+        };
+
+        // -------------------------------------------------------------------------
+        // Restore existing Dashboard Logic
+        // -------------------------------------------------------------------------
+        window.toggleGuideModal = function() {
+            const modal = document.getElementById('guide-modal');
+            if (modal) {
+                if (modal.classList.contains('hidden')) {
+                    modal.classList.remove('hidden');
+                } else {
+                    modal.classList.add('hidden');
+                }
+            }
+        };
+
+        window.toggleHiringTriggers = function() {
+            const wrapper = document.getElementById('hiring-timeline-wrapper');
+            const icon = document.getElementById('triggers-collapse-icon');
+            window.isTriggersCollapsed = !window.isTriggersCollapsed;
+            if (window.isTriggersCollapsed) {
+                wrapper.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            } else {
+                wrapper.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            }
+        };
+
+        window.showAutoSaveIndicator = function() {
+            const ind = document.getElementById('save-indicator');
+            if (ind) {
+                ind.classList.remove('opacity-0');
+                ind.classList.add('opacity-100');
+                setTimeout(() => { ind.classList.remove('opacity-100'); ind.classList.add('opacity-0'); }, 1500);
+            }
+        };
+
+        window.fetchAndProcess = async function() {
+            const syncIcon = document.getElementById('sync-icon');
+            if (syncIcon) syncIcon.classList.add('animate-spin');
+
+            const urlInput = document.getElementById('csv-url-input');
+            const baseCsvUrl = (urlInput && urlInput.value.trim()) || DEFAULT_CSV_URL;
+            const separator = baseCsvUrl.includes('?') ? '&' : '?';
+            const csvUrl = baseCsvUrl + separator + 't=' + new Date().getTime();
+
+            try {
+                const response = await fetch(csvUrl, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`HTTP status code error ${response.status}`);
+                const csvText = await response.text();
+
+                await new Promise((resolve, reject) => {
+                    Papa.parse(csvText, {
+                        header: false, skipEmptyLines: true,
+                        complete: function(results) {
+                            if (results.data && Math.round(results.data.length) > 0) {
+                                window.csvRawData = results.data;
+                                try {
+                                    window.parseHorizontalSpreadsheet();
+                                    window.showSuccessBanner("Successfully synchronized with live Google Sheets!");
+                                    resolve();
+                                } catch (e) {
+                                    console.error("Renderer error: ", e);
+                                    reject(e);
+                                }
+                            } else {
+                                reject(new Error("Parsed sheet contains empty rows"));
+                            }
+                        },
+                        error: function(err) { reject(new Error(`Parser Error: ${err.message}`)); }
+                    });
+                });
+            } catch (error) {
+                console.warn("Google Sheets direct CORS restricted. Running from local high-fidelity clinical simulation.", error);
+                window.csvRawData = mockSpreadsheetBackup;
+                try {
+                    window.parseHorizontalSpreadsheet();
+                    window.showWarningBanner("CORS Restriction Activated");
+                } catch (e) { console.error("Critical error in backup transposer", e); }
+            } finally {
+                const currentIcon = document.getElementById('sync-icon');
+                if (currentIcon) currentIcon.classList.remove('animate-spin');
+            }
+            lucide.createIcons();
+        };
+
+        window.isMonthHeader = function(str) {
+            const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+            const val = String(str).toLowerCase().trim();
+            return months.some(m => val.includes(m));
+        };
+
+        window.cleanNum = function(v) {
+            if (v === undefined || v === null) return 0;
+            const s = String(v).replace(/[$,%\s]/g, '');
+            const parsed = parseFloat(s);
+            return isNaN(parsed) ? 0 : parsed;
+        };
+
+        window.getPluralRole = function(role) {
+            const r = role.toLowerCase().trim();
+            if (r === 'coach') return 'Coaches';
+            if (r === 'therapist') return 'Therapists';
+            if (r === 'psychiatrist') return 'Psychiatrists';
+            return role + 's';
+        };
+
+        window.isAlertMuted = function(discipline, monthName) {
+            return window.mutedAlerts[discipline] && window.mutedAlerts[discipline][monthName] === true;
+        };
+
+        window.toggleAlertMute = function(discipline, monthName) {
+            if (!window.mutedAlerts[discipline]) window.mutedAlerts[discipline] = {};
+            window.mutedAlerts[discipline][monthName] = !window.mutedAlerts[discipline][monthName];
+            localStorage.setItem(STORAGE_KEY_MUTED_ALERTS, JSON.stringify(window.mutedAlerts));
+            try { window.renderTimeline(); } catch(e) {}
+            try { window.renderSnapshotMatrix(); } catch(e) {}
+            try { window.syncMuteCheckboxes(); } catch(e) {}
+        };
+
+        window.parseHorizontalSpreadsheet = function() {
+            window.computedMonths = [];
+            window.globalActualCensus = null; 
+
+            let monthColumns = [];
+            let rowLabels = {
+                Therapy: { census: null, utilization: null, capacity: null, difference: null, fteDiff: null, staticHired: null, staticFunctional: null, staticEff: null },
+                Coaching: { census: null, utilization: null, capacity: null, difference: null, fteDiff: null, staticHired: null, staticFunctional: null, staticEff: null },
+                Psychiatry: { census: null, capacity: null, difference: null, fteDiff: null, staticHired: null, staticFunctional: null, staticEff: null }
+            };
+
+            let currentSection = null;
+
+            for (let i = 0; i < window.csvRawData.length; i++) {
+                const row = window.csvRawData[i];
+                if (!row || row.length < 2) continue; 
+
+                const colA = String(row[0] || '').trim();
+                const colB = String(row[1] || '').trim();
+                const colC = String(row[2] || '').trim();
+
+                if (colA.toLowerCase() === 'census' && colB !== '' && !currentSection) {
+                    window.globalActualCensus = window.cleanNum(colB);
+                }
+
+                if (colA.toLowerCase().includes('therapy')) currentSection = 'Therapy';
+                else if (colA.toLowerCase().includes('coaching')) currentSection = 'Coaching';
+                else if (colA.toLowerCase().includes('psychiatry')) currentSection = 'Psychiatry';
+
+                if (!currentSection) continue;
+
+                if (colC.toLowerCase() === 'forecast' && monthColumns.length === 0) {
+                    for (let c = 3; c < row.length; c++) {
+                        const cellVal = String(row[c] || '').trim();
+                        if (cellVal && window.isMonthHeader(cellVal)) {
+                            monthColumns.push({ index: c, name: cellVal });
+                        }
+                    }
+                }
+
+                // ==============================================================
+                // Robust Vertical Search for Left-Panel Metrics
+                // ==============================================================
+                const cleanColB = colB.toLowerCase();
+                if (cleanColB === 'headcount' || cleanColB === 'hired fte') {
+                    let nextVal = String(window.csvRawData[i+1] ? window.csvRawData[i+1][1] || '' : '').trim();
+                    if (nextVal !== '') rowLabels[currentSection].staticHired = nextVal;
+                } else if (cleanColB === 'functional fte') {
+                    let nextVal = String(window.csvRawData[i+1] ? window.csvRawData[i+1][1] || '' : '').trim();
+                    if (nextVal !== '') rowLabels[currentSection].staticFunctional = nextVal;
+                }
+
+                // Extract chronological rows from Column C
+                const cleanLabel = colC.toLowerCase();
+                if (cleanLabel === 'census') {
+                    rowLabels[currentSection].census = row;
+                    // Fallback to horizontal grab if vertical grab above failed
+                    if (!rowLabels[currentSection].staticHired && colB !== '') rowLabels[currentSection].staticHired = colB;
+                } else if (cleanLabel.includes('utilization')) {
+                    rowLabels[currentSection].utilization = row;
+                } else if (cleanLabel.includes('capacity')) {
+                    rowLabels[currentSection].capacity = row;
+                } else if (cleanLabel.includes('difference')) {
+                    rowLabels[currentSection].difference = row;
+                    // Fallback to horizontal grab if vertical grab above failed
+                    if (!rowLabels[currentSection].staticFunctional && colB !== '') rowLabels[currentSection].staticFunctional = colB;
+                } else if (cleanLabel.includes('fte')) {
+                    rowLabels[currentSection].fteDiff = row;
+                } else if (cleanLabel.includes('network efficiency')) {
+                    rowLabels[currentSection].staticEff = colB;
+                    // Fallback check column A
+                    if (!colB && colA) rowLabels[currentSection].staticEff = colA; 
+                }
+            }
+
+            ['Therapy', 'Coaching', 'Psychiatry'].forEach(section => {
+                if (rowLabels[section].staticHired) window.staticMetrics[section].hired = rowLabels[section].staticHired;
+                if (rowLabels[section].staticFunctional) window.staticMetrics[section].functional = rowLabels[section].staticFunctional;
+                if (rowLabels[section].staticEff) window.staticMetrics[section].efficiency = rowLabels[section].staticEff;
+            });
+
+            if (monthColumns.length === 0) {
+                const defaultMonths = ["June", "July", "August", "September", "October", "November", "December"];
+                defaultMonths.forEach((m, idx) => monthColumns.push({ index: 7 + idx, name: m }));
+            }
+
+            const startMonthSetting = localStorage.getItem(STORAGE_KEY_START_MONTH) || 'Auto';
+            let startIndex = 0;
+            let targetMonthStr = '';
+            
+            if (startMonthSetting === 'Auto') targetMonthStr = new Date().toLocaleString('default', { month: 'long' }).toLowerCase();
+            else if (startMonthSetting !== 'Show All') targetMonthStr = startMonthSetting.toLowerCase();
+
+            if (targetMonthStr) {
+                const foundIdx = monthColumns.findIndex(m => m.name.toLowerCase().includes(targetMonthStr));
+                if (foundIdx !== -1) startIndex = foundIdx;
+            }
+
+            monthColumns = monthColumns.slice(startIndex);
+            const activeScopeLabel = document.getElementById('active-scope-label');
+            if (activeScopeLabel) activeScopeLabel.textContent = startMonthSetting === 'Show All' ? 'All Rows Active (No Archiving)' : `${monthColumns[0]?.name || 'Current'} onwards (Auto-Rolling)`;
+
+            monthColumns.forEach(mCol => {
+                const cIdx = mCol.index;
+                const tCensus = window.cleanNum(rowLabels.Therapy.census ? rowLabels.Therapy.census[cIdx] : 0);
+                const tCap = window.cleanNum(rowLabels.Therapy.capacity ? rowLabels.Therapy.capacity[cIdx] : 0);
+                const cCensus = window.cleanNum(rowLabels.Coaching.census ? rowLabels.Coaching.census[cIdx] : 0);
+                const cCap = window.cleanNum(rowLabels.Coaching.capacity ? rowLabels.Coaching.capacity[cIdx] : 0);
+                const pCensus = window.cleanNum(rowLabels.Psychiatry.census ? rowLabels.Psychiatry.census[cIdx] : 0);
+                const pCap = window.cleanNum(rowLabels.Psychiatry.capacity ? rowLabels.Psychiatry.capacity[cIdx] : 0);
+
+                window.computedMonths.push({
+                    name: mCol.name,
+                    therapyCensus: tCensus,
+                    therapyUtilization: window.cleanNum(rowLabels.Therapy.utilization ? rowLabels.Therapy.utilization[cIdx] : 0) || Math.round(tCensus / 0.87),
+                    therapyCapacity: tCap,
+                    therapyDifference: window.cleanNum(rowLabels.Therapy.difference ? rowLabels.Therapy.difference[cIdx] : 0),
+                    therapyFteDiff: window.cleanNum(rowLabels.Therapy.fteDiff ? rowLabels.Therapy.fteDiff[cIdx] : 0),
+
+                    coachingCensus: cCensus,
+                    coachingUtilization: window.cleanNum(rowLabels.Coaching.utilization ? rowLabels.Coaching.utilization[cIdx] : 0) || Math.round(cCensus / 0.87),
+                    coachingCapacity: cCap,
+                    coachingDifference: window.cleanNum(rowLabels.Coaching.difference ? rowLabels.Coaching.difference[cIdx] : 0),
+                    coachingFteDiff: window.cleanNum(rowLabels.Coaching.fteDiff ? rowLabels.Coaching.fteDiff[cIdx] : 0),
+
+                    psychiatryCensus: pCensus,
+                    psychiatryCapacity: pCap,
+                    psychiatryDiff100: pCap - pCensus,
+                    psychiatryFte100: (pCap - pCensus) / 224,
+                    psychiatryDiff85: pCap - (pCensus * 0.85),
+                    psychiatryFte85: (pCap - (pCensus * 0.85)) / 224
+                });
+            });
+
+            try { window.initScenarioHires(); } catch(e) {}
+            try { window.syncExclusionCheckboxes(); } catch(e) {}
+            try { window.syncMuteCheckboxes(); } catch(e) {}
+            try { window.populateSelector(); } catch(e) {}
+            try { window.updateDashboardDisplay(); } catch(e) {}
+            try { window.renderTable(); } catch(e) {}
+            try { window.renderTimeline(); } catch(e) {}
+            try { window.renderSnapshotMatrix(); } catch(e) {}
+            try { window.renderSettingsMatrices(); } catch(e) {}
+            try { window.renderAssumptionsTable(); } catch(e) {}
+            try { window.renderRampTable(); } catch(e) {}
+            try { window.renderUtilTable(); } catch(e) {}
+            try { window.renderScenarioInputs(); } catch(e) {}
+            try { window.renderScenarioOutput(); } catch(e) {}
+            try { window.renderWaterfallTable(); } catch(e) {}
+            try { window.renderExecutiveSummary(); } catch(e) {}
+            try { window.renderCharts(); } catch(e) {}
+        };
+
+        window.isMonthActive = function(discipline, monthName) {
+            return !(window.ignoredMonths[discipline] && window.ignoredMonths[discipline][monthName] === true);
+        };
+
+        window.initScenarioHires = function() {
+            if (window.utilizationTargets.therapy.length === 0) {
+                window.computedMonths.forEach(() => {
+                    window.utilizationTargets.therapy.push(87);
+                    window.utilizationTargets.coaching.push(87);
+                    window.utilizationTargets.psychiatry.push(85); 
+                });
+            }
+
+            window.computedMonths.forEach((m, idx) => {
+                if (!window.scenarioHires[m.name]) {
+                    let defaultAppCoaching = (m.name.includes('Aug')) ? 5 : 0;
+                    let defaultOpenTherapy = (m.name.includes('Sep')) ? 2 : 0;
+                    let defaultSignedTherapy = (m.name.includes('Sep')) ? 3 : ((m.name.includes('Oct')) ? 1 : 0);
+                    let defaultOpenTherapyPre = (m.name.includes('Sep')) ? 5 : 0;
+                    let defaultOpenPsych50 = (m.name.includes('Nov')) ? 2 : 0;
+
+                    window.scenarioHires[m.name] = {
+                        therapy: {signed: defaultSignedTherapy, open: defaultOpenTherapy, hypo: 0},
+                        therapyPre: {signed: 0, open: defaultOpenTherapyPre, hypo: 0},
+                        coaching: {signed: 0, open: defaultAppCoaching, hypo: 0},
+                        psych25: {signed: 0, open: 0, hypo: 0},
+                        psych50: {signed: 0, open: defaultOpenPsych50, hypo: 0}
+                    };
+                } else {
+                    ['therapy', 'therapyPre', 'coaching', 'psych25', 'psych50'].forEach(disc => {
+                        if (window.scenarioHires[m.name][disc].open === undefined) {
+                            window.scenarioHires[m.name][disc].open = window.scenarioHires[m.name][disc].approved || 0;
+                            window.scenarioHires[m.name][disc].signed = 0;
+                        }
+                    });
+                }
+            });
+        };
+
+        window.getRampCapacity = function(discipline, monthsEmployed) {
+            if (monthsEmployed < 1) return 0;
+            const idx = monthsEmployed - 1; 
+            const rampArr = window.providerRamps[discipline];
+            if (!rampArr) return 0;
+            if (idx < rampArr.length) return rampArr[idx];
+            return rampArr[rampArr.length - 1]; 
+        };
+
+        window.getAddedCapacity = function(monthIndex, discipline) {
+            let totalAddedCapacity = 0;
+            for (let i = 0; i <= monthIndex; i++) {
+                let mName = window.computedMonths[i].name;
+                let data = window.scenarioHires[mName][discipline] || {signed: 0, open: 0, hypo: 0};
+                let totalHires = (data.signed || 0) + (data.open || 0) + (data.hypo || 0);
+                if (totalHires > 0) {
+                    let monthsEmployed = (monthIndex - i) + 1; 
+                    totalAddedCapacity += totalHires * window.getRampCapacity(discipline, monthsEmployed);
+                }
+            }
+            return totalAddedCapacity;
+        };
+
+        window.getHypotheticalCapacity = function(monthIndex, discipline) {
+            let totalAddedCapacity = 0;
+            for (let i = 0; i <= monthIndex; i++) {
+                let mName = window.computedMonths[i].name;
+                let data = window.scenarioHires[mName][discipline] || {signed: 0, open: 0, hypo: 0};
+                let totalHires = (data.open || 0) + (data.hypo || 0); // Excludes signed offers
+                if (totalHires > 0) {
+                    let monthsEmployed = (monthIndex - i) + 1; 
+                    totalAddedCapacity += totalHires * window.getRampCapacity(discipline, monthsEmployed);
+                }
+            }
+            return totalAddedCapacity;
+        };
+
+        window.previewScenario = function() {
+            window.computedMonths.forEach((m, idx) => {
+                ['therapy', 'therapyPre', 'coaching', 'psych25', 'psych50'].forEach(disc => {
+                    const signIn = document.getElementById(`scenario-signed-${m.name}-${disc}`);
+                    const openIn = document.getElementById(`scenario-open-${m.name}-${disc}`);
+                    const hypIn = document.getElementById(`scenario-hypo-${m.name}-${disc}`);
+                    if (signIn && openIn && hypIn) {
+                        window.scenarioHires[m.name][disc].signed = parseInt(signIn.value) || 0;
+                        window.scenarioHires[m.name][disc].open = parseInt(openIn.value) || 0;
+                        window.scenarioHires[m.name][disc].hypo = parseInt(hypIn.value) || 0;
+                        const totEl = document.getElementById(`scenario-total-${m.name}-${disc}`);
+                        if (totEl) totEl.textContent = window.scenarioHires[m.name][disc].signed + window.scenarioHires[m.name][disc].open + window.scenarioHires[m.name][disc].hypo;
+                    }
+                });
+
+                ['therapy', 'therapyPre', 'coaching', 'psych25', 'psych50'].forEach(disc => {
+                    const rampIn = document.getElementById(`ramp-input-${disc}-${idx}`);
+                    if (rampIn) window.providerRamps[disc][idx] = parseInt(rampIn.value) || 0;
+                });
+
+                ['therapy', 'coaching', 'psychiatry'].forEach(disc => {
+                    const utilIn = document.getElementById(`util-input-${disc}-${idx}`);
+                    if (utilIn) window.utilizationTargets[disc][idx] = parseFloat(utilIn.value) || 0;
+                });
+            });
+
+            ['therapy', 'coaching', 'psychiatry'].forEach(disc => {
+                const attInput = document.getElementById(`assumption-attrition-${disc}`);
+                const buffInput = document.getElementById(`assumption-buffer-${disc}`);
+                if (attInput) window.strategicAssumptions[disc].attrition = parseFloat(attInput.value) || 0;
+                if (buffInput) window.strategicAssumptions[disc].buffer = parseFloat(buffInput.value) || 0;
+            });
+
+            try { window.renderScenarioOutput(); } catch(e) {}
+            try { window.renderWaterfallTable(); } catch(e) {}
+            try { window.renderTimeline(); } catch(e) {}
+            try { window.updateScenarioSpotlight(); } catch(e) {}
+            try { window.renderExecutiveSummary(); } catch(e) {}
+        };
+
+        window.toggleRampTable = function() { document.getElementById('ramp-table-container').classList.toggle('hidden'); };
+        window.toggleAssumptionsTable = function() { document.getElementById('assumptions-table-container').classList.toggle('hidden'); };
+        window.toggleUtilTable = function() { document.getElementById('util-table-container').classList.toggle('hidden'); };
+
+        window.toggleExecutiveSummary = function() {
+            const wrapper = document.getElementById('executive-summary-content-wrapper');
+            const icon = document.getElementById('exec-collapse-icon');
+            window.isExecSummaryCollapsed = !window.isExecSummaryCollapsed;
+            if (window.isExecSummaryCollapsed) {
+                if (wrapper) wrapper.classList.add('hidden');
+                if (icon) icon.classList.remove('rotate-180'); 
+            } else {
+                if (wrapper) wrapper.classList.remove('hidden');
+                if (icon) icon.classList.add('rotate-180');
+            }
+        };
+
+        window.copyExecutiveSummary = function() {
+            const container = document.getElementById('executive-summary-content');
+            if (!container) return;
+            const el = document.createElement('textarea');
+            el.value = container.innerText;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            window.showSuccessBanner("Executive summary copied to clipboard!");
+        };
+
+        window.restoreDefaultScenario = function() {
+            window.customConfirm(
+                "Reset Scenario Inputs",
+                "Are you sure you want to clear your current inputs and restore the defaults?",
+                () => {
+                    window.scenarioHires = {};
+                    window.providerRamps = JSON.parse(JSON.stringify(DEFAULT_RAMPS));
+                    window.strategicAssumptions = JSON.parse(JSON.stringify(DEFAULT_ASSUMPTIONS));
+                    
+                    window.initScenarioHires();
+                    try { window.renderAssumptionsTable(); } catch(e) {}
+                    try { window.renderRampTable(); } catch(e) {}
+                    try { window.renderUtilTable(); } catch(e) {}
+                    try { window.renderScenarioInputs(); } catch(e) {}
+                    try { window.renderScenarioOutput(); } catch(e) {}
+                    try { window.renderWaterfallTable(); } catch(e) {}
+                    try { window.renderTimeline(); } catch(e) {}
+                    try { window.renderExecutiveSummary(); } catch(e) {}
+                    
+                    window.saveAllScenarios();
+                }
+            );
+        };
+
+        window.renderAssumptionsTable = function() {
+            const tbody = document.getElementById('assumptions-input-body');
+            if (!tbody) return;
+            const rows = [
+                { id: 'therapy', label: 'Therapy', color: 'text-teal-600 dark:text-teal-400' },
+                { id: 'coaching', label: 'Coaching', color: 'text-indigo-600 dark:text-indigo-400' },
+                { id: 'psychiatry', label: 'Psychiatry', color: 'text-amber-600 dark:text-amber-400' }
+            ];
+            tbody.innerHTML = '';
+            rows.forEach(r => {
+                let attVal = window.strategicAssumptions[r.id].attrition;
+                let buffVal = window.strategicAssumptions[r.id].buffer;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-100/50 dark:hover:bg-slate-800/30 transition-all">
+                        <td class="py-2.5 px-4 font-bold ${r.color} text-xs">${r.label}</td>
+                        <td class="py-2 px-3 border-l border-slate-200/60 dark:border-slate-700/60 text-center">
+                            <input type="number" step="0.1" id="assumption-attrition-${r.id}" min="0" max="99" value="${attVal}" class="w-16 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded text-center text-xs py-1 font-bold focus:ring-1 focus:ring-indigo-500 focus:outline-none" oninput="window.previewScenario()">
+                        </td>
+                        <td class="py-2 px-3 border-l border-slate-200/60 dark:border-slate-700/60 text-center">
+                            <input type="number" step="0.1" id="assumption-buffer-${r.id}" min="-99" max="99" value="${buffVal}" class="w-16 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded text-center text-xs py-1 font-bold focus:ring-1 focus:ring-indigo-500 focus:outline-none" oninput="window.previewScenario()">
+                        </td>
+                    </tr>
+                `;
+            });
+        };
+
+        window.renderRampTable = function() {
+            const thead = document.getElementById('ramp-input-header');
+            const tbody = document.getElementById('ramp-input-body');
+            if (!thead || !tbody) return;
+            let headHtml = `<th class="py-2.5 px-4 text-slate-400 text-xs font-bold w-48">Discipline</th>`;
+            window.computedMonths.forEach((m, idx) => headHtml += `<th class="py-2.5 px-2 text-center text-slate-500 text-xs border-l border-slate-200/60 dark:border-slate-700/60">Month ${idx + 1}</th>`);
+            thead.innerHTML = headHtml;
+
+            const rows = [
+                { id: 'therapy', label: 'Therapist (1.0)', color: 'text-teal-600 dark:text-teal-400' },
+                { id: 'therapyPre', label: 'Pre-Licensed (0.8)', color: 'text-teal-500 dark:text-teal-300' },
+                { id: 'coaching', label: 'Coach', color: 'text-indigo-600 dark:text-indigo-400' },
+                { id: 'psych25', label: 'Psychiatrist (0.25)', color: 'text-amber-600 dark:text-amber-400' },
+                { id: 'psych50', label: 'Psychiatrist (0.50)', color: 'text-amber-600 dark:text-amber-400' }
+            ];
+
+            tbody.innerHTML = '';
+            rows.forEach(r => {
+                let trHtml = `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40"><td class="py-2 px-4 font-bold ${r.color} text-xs">${r.label}</td>`;
+                window.computedMonths.forEach((m, idx) => {
+                    let val = window.providerRamps[r.id][idx] !== undefined ? window.providerRamps[r.id][idx] : window.providerRamps[r.id][window.providerRamps[r.id].length - 1];
+                    trHtml += `<td class="py-1 px-1 border-l border-slate-200/60 dark:border-slate-700/60 text-center">
+                        <input type="number" id="ramp-input-${r.id}-${idx}" min="0" max="999" value="${val}" class="w-12 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded text-center text-xs py-0.5 font-bold focus:ring-1 focus:ring-indigo-500 focus:outline-none" oninput="window.previewScenario()">
+                    </td>`;
+                });
+                tbody.innerHTML += trHtml + `</tr>`;
+            });
+        };
+
+        window.renderUtilTable = function() {
+            const thead = document.getElementById('util-input-header');
+            const tbody = document.getElementById('util-input-body');
+            if (!thead || !tbody) return;
+            
+            let headHtml = `<th class="py-2.5 px-4 text-slate-400 text-xs font-bold w-48">Target Utilization %</th>`;
+            window.computedMonths.forEach(m => headHtml += `<th class="py-2.5 px-2 text-center text-slate-500 text-xs border-l border-slate-200/60 dark:border-slate-700/60">${m.name}</th>`);
+            thead.innerHTML = headHtml;
+
+            const rows = [
+                { id: 'therapy', label: 'Therapy Target %', default: 87, color: 'text-teal-600 dark:text-teal-400' },
+                { id: 'coaching', label: 'Coaching Target %', default: 87, color: 'text-indigo-600 dark:text-indigo-400' },
+                { id: 'psychiatry', label: 'Psychiatry Target %', default: 85, color: 'text-amber-600 dark:text-amber-400' }
+            ];
+
+            tbody.innerHTML = '';
+            rows.forEach(r => {
+                let trHtml = `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40"><td class="py-2 px-4 font-bold ${r.color} text-xs">${r.label}</td>`;
+                window.computedMonths.forEach((m, idx) => {
+                    let val = window.utilizationTargets[r.id][idx] || r.default;
+                    trHtml += `<td class="py-1 px-1 border-l border-slate-200/60 dark:border-slate-700/60 text-center">
+                        <input type="number" id="util-input-${r.id}-${idx}" min="1" max="200" value="${val}" class="w-12 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-600 rounded text-center text-xs py-0.5 font-bold focus:ring-1 focus:ring-indigo-500 focus:outline-none" oninput="window.previewScenario()">
+                    </td>`;
+                });
+                tbody.innerHTML += trHtml + `</tr>`;
+            });
+        };
+
+        window.renderScenarioInputs = function() {
+            const thead = document.getElementById('scenario-input-header');
+            const tbody = document.getElementById('scenario-input-body');
+            if (!thead || !tbody) return;
+
+            let headHtml = `<th class="py-2.5 px-4 text-slate-400 text-xs font-bold w-48">Hiring Commitments & Options</th>`;
+            window.computedMonths.forEach(m => headHtml += `<th class="py-2.5 px-3 text-center text-xs font-bold text-slate-700 dark:text-slate-300 border-l border-slate-200/50 dark:border-slate-800/40">${m.name}</th>`);
+            thead.innerHTML = headHtml;
+
+            const inputRows = [
+                { id: 'therapy', disc: 'therapy', label: 'Therapists (1.0)', color: 'text-teal-600 dark:text-teal-400' },
+                { id: 'therapyPre', disc: 'therapy', label: 'Pre-Licensed (0.8)', color: 'text-teal-500 dark:text-teal-300' },
+                { id: 'coaching', disc: 'coaching', label: 'Coaches', color: 'text-indigo-600 dark:text-indigo-400' },
+                { id: 'psych25', disc: 'psychiatry', label: 'Psych (0.25)', color: 'text-amber-600 dark:text-amber-400' },
+                { id: 'psych50', disc: 'psychiatry', label: 'Psych (0.50)', color: 'text-amber-600 dark:text-amber-400' }
+            ];
+
+            tbody.innerHTML = '';
+            inputRows.forEach(r => {
+                let isHidden = !window.currentScenarioFilters.includes(r.disc) ? 'hidden' : '';
+                
+                let trSigned = `<tr data-disc="${r.disc}" scenario-row="true" class="bg-emerald-50/20 dark:bg-emerald-950/20 ${isHidden}"><td class="py-2 px-4 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 pl-6">Signed Offers (In Baseline)</td>`;
+                let trOpen = `<tr data-disc="${r.disc}" scenario-row="true" class="bg-blue-50/20 dark:bg-blue-950/20 ${isHidden}"><td class="py-2 px-4 text-[11px] font-bold text-blue-700 dark:text-blue-400 pl-6">Open Approved Reqs</td>`;
+                let trHyp = `<tr data-disc="${r.disc}" scenario-row="true" class="bg-amber-50/20 dark:bg-amber-950/20 ${isHidden}"><td class="py-2 px-4 text-[11px] font-bold text-amber-700 dark:text-amber-400 pl-6">Hypothetical Additions</td>`;
+                let trTot = `<tr data-disc="${r.disc}" scenario-row="true" class="bg-slate-50/50 dark:bg-slate-800/30 border-b-4 border-slate-200/50 dark:border-slate-800 ${isHidden}"><td class="py-2 px-4 text-[11px] font-extrabold ${r.color} uppercase tracking-wider">${r.label} Pipeline Total</td>`;
+
+                window.computedMonths.forEach(m => {
+                    let signVal = window.scenarioHires[m.name][r.id].signed || 0;
+                    let openVal = window.scenarioHires[m.name][r.id].open || 0;
+                    let hypVal = window.scenarioHires[m.name][r.id].hypo || 0;
+                    let totVal = signVal + openVal + hypVal;
+
+                    trSigned += `<td class="py-1 px-2 border-l border-emerald-100/50 dark:border-slate-700/40 text-center">
+                        <input type="number" id="scenario-signed-${m.name}-${r.id}" min="0" max="99" value="${signVal}" class="w-12 bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded text-center text-xs py-1 font-bold focus:ring-1 focus:ring-emerald-500 focus:outline-none" oninput="window.previewScenario()">
+                    </td>`;
+
+                    trOpen += `<td class="py-1 px-2 border-l border-blue-100/50 dark:border-slate-700/40 text-center">
+                        <input type="number" id="scenario-open-${m.name}-${r.id}" min="0" max="99" value="${openVal}" class="w-12 bg-white dark:bg-slate-900 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded text-center text-xs py-1 font-bold focus:ring-1 focus:ring-blue-500 focus:outline-none" oninput="window.previewScenario()">
+                    </td>`;
+                    
+                    trHyp += `<td class="py-1 px-2 border-l border-amber-100/50 dark:border-slate-700/40 text-center">
+                        <input type="number" id="scenario-hypo-${m.name}-${r.id}" min="0" max="99" value="${hypVal}" class="w-12 bg-white dark:bg-slate-900 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded text-center text-xs py-1 font-bold focus:ring-1 focus:ring-amber-500 focus:outline-none" oninput="window.previewScenario()">
+                    </td>`;
+
+                    trTot += `<td class="py-2 px-2 border-l border-slate-200/50 dark:border-slate-800/40 text-center font-extrabold text-slate-800 dark:text-white text-sm" id="scenario-total-${m.name}-${r.id}">${totVal}</td>`;
+                });
+                
+                tbody.innerHTML += trSigned + `</tr>` + trOpen + `</tr>` + trHyp + `</tr>` + trTot + `</tr>`;
+            });
+        };
+
+        window.renderScenarioOutput = function() {
+            const outHead = document.getElementById('scenario-output-header');
+            const outBody = document.getElementById('scenario-output-body');
+            if (!outHead || !outBody) return;
+
+            let outHeadHtml = `<th class="py-2.5 px-4 text-slate-400 text-xs font-bold w-48">Adjusted FTE Status</th>`;
+            window.computedMonths.forEach((m) => {
+                outHeadHtml += `<th class="py-2.5 px-3 text-center text-xs font-bold text-slate-700 dark:text-slate-300 border-l border-slate-200/50 dark:border-slate-800/40">${m.name}</th>`;
+            });
+            outHead.innerHTML = outHeadHtml;
+
+            outBody.innerHTML = '';
+            const snapshotRows = [
+                { id: 'therapy', disc: 'therapy', label: 'Therapy Adjusted FTE', color: 'text-teal-600 dark:text-teal-400',
+                  getAdjVal: (m, idx) => {
+                      const targetPct = (window.utilizationTargets.therapy[idx] || 87) / 100;
+                      const dynamicUtilTarget = m.therapyCensus / targetPct;
+                      const baseFTE = (m.therapyCapacity - dynamicUtilTarget) / 25;
+                      const addedFTE = (window.getHypotheticalCapacity(idx, 'therapy') + window.getHypotheticalCapacity(idx, 'therapyPre')) / 25;
+                      const attrFTE = window.strategicAssumptions.therapy.attrition * idx;
+                      return baseFTE + addedFTE - attrFTE;
+                  }
+                },
+                { id: 'coaching', disc: 'coaching', label: 'Coaching Adjusted FTE', color: 'text-indigo-600 dark:text-indigo-400',
+                  getAdjVal: (m, idx) => {
+                      const targetPct = (window.utilizationTargets.coaching[idx] || 87) / 100;
+                      const dynamicUtilTarget = m.coachingCensus / targetPct;
+                      const baseFTE = (m.coachingCapacity - dynamicUtilTarget) / 22;
+                      const addedFTE = window.getHypotheticalCapacity(idx, 'coaching') / 22;
+                      const attrFTE = window.strategicAssumptions.coaching.attrition * idx;
+                      return baseFTE + addedFTE - attrFTE;
+                  }
+                },
+                { id: 'psychiatry', disc: 'psychiatry', label: 'Psych Adj. (100% Census)', color: 'text-amber-500 dark:text-amber-500', isPsych: true,
+                  getAdjVal: (m, idx) => {
+                      const baseFTE = (m.psychiatryCapacity - m.psychiatryCensus) / 224;
+                      const addedFTE = (window.getHypotheticalCapacity(idx, 'psych25') + window.getHypotheticalCapacity(idx, 'psych50')) / 224;
+                      const attrFTE = window.strategicAssumptions.psychiatry.attrition * idx;
+                      return baseFTE + addedFTE - attrFTE;
+                  }
+                },
+                { id: 'psychiatry', disc: 'psychiatry', label: 'Psych Adj. (Custom Target)', color: 'text-orange-500 dark:text-orange-400', isPsych: true,
+                  getAdjVal: (m, idx) => {
+                      const targetPct = (window.utilizationTargets.psychiatry[idx] || 85) / 100;
+                      const baseFTE = (m.psychiatryCapacity - (m.psychiatryCensus * targetPct)) / 224;
+                      const addedFTE = (window.getHypotheticalCapacity(idx, 'psych25') + window.getHypotheticalCapacity(idx, 'psych50')) / 224;
+                      const attrFTE = window.strategicAssumptions.psychiatry.attrition * idx;
+                      return baseFTE + addedFTE - attrFTE;
+                  }
+                }
+            ];
+
+            snapshotRows.forEach(rowInfo => {
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-disc', rowInfo.disc);
+                tr.setAttribute('scenario-row', 'true');
+                let visibilityClass = !window.currentScenarioFilters.includes(rowInfo.disc) ? 'hidden' : '';
+                tr.className = `hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all ${visibilityClass}`;
+
+                let rowHtml = `<td class="py-3 px-4 font-bold text-slate-800 dark:text-slate-200"><span class="${rowInfo.color}">${rowInfo.label}</span></td>`;
+
+                window.computedMonths.forEach((m, idx) => {
+                    const disciplineKey = rowInfo.isPsych ? 'Psychiatry' : rowInfo.id.charAt(0).toUpperCase() + rowInfo.id.slice(1);
+                    const active = window.isMonthActive(disciplineKey, m.name);
+                    const val = rowInfo.getAdjVal(m, idx);
+                    
+                    const bufferTarget = window.strategicAssumptions[rowInfo.id]?.buffer || 0;
+                    const ratio = rowInfo.id === 'therapy' ? 25 : (rowInfo.id === 'coaching' ? 22 : 224);
+
+                    if (!active) {
+                        rowHtml += `<td class="py-3 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40"><span class="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 px-2 py-1 rounded-md">Ignored</span></td>`;
+                    } else {
+                        const isSafe = val >= bufferTarget;
+                        const textColor = isSafe ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
+                        const sign = val >= 0 ? '+' : '';
+                        
+                        const ptCount = Math.round(val * ratio);
+                        const ptSign = ptCount > 0 ? '+' : '';
+
+                        rowHtml += `
+                            <td class="py-1.5 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40">
+                                <div class="flex flex-col items-center justify-center">
+                                    <span class="text-sm font-black tracking-tight ${textColor}">${sign}${val.toFixed(2)}</span>
+                                    <span class="text-[9px] font-medium text-slate-400 dark:text-slate-500 leading-none pb-0.5">(${ptSign}${ptCount} pts)</span>
+                                </div>
+                            </td>
+                        `;
+                    }
+                });
+
+                tr.innerHTML = rowHtml;
+                outBody.appendChild(tr);
+            });
+        };
+
+        window.updateScenarioSpotlight = function() {
+            const selector = document.getElementById('scenario-month-selector');
+            if (selector) window.scenarioSpotlightIdx = parseInt(selector.value) || 0;
+            if (window.computedMonths.length === 0) return;
+
+            const idx = window.scenarioSpotlightIdx;
+            const m = window.computedMonths[idx];
+
+            const updateDiscipline = (discKey, id, baseCap, census, addedCap, ratio, defaultTarget) => {
+                const isIgnored = !window.isMonthActive(discKey, m.name);
+                
+                const labelEl = document.getElementById(`eff-${id}-label`);
+                const censusEl = document.getElementById(`eff-${id}-census`);
+                const capEl = document.getElementById(`eff-${id}-cap`);
+                const fteEl = document.getElementById(`eff-${id}-fte`);
+                const pctEl = document.getElementById(`eff-${id}-pct-text`);
+                const barEl = document.getElementById(`eff-${id}-bar`);
+                const tgtLabelEl = document.getElementById(`eff-${id}-tgt-label`);
+
+                if (isIgnored) {
+                    if (labelEl) labelEl.textContent = 'Ignored';
+                    if (censusEl) censusEl.textContent = '--';
+                    if (capEl) capEl.textContent = '--';
+                    if (fteEl) fteEl.textContent = '--';
+                    if (pctEl) pctEl.textContent = '--%';
+                    if (barEl) { barEl.style.width = '0%'; barEl.className = 'h-full bg-slate-400 transition-all duration-500'; }
+                    return;
+                }
+
+                const attrCap = (window.strategicAssumptions[id].attrition * idx) * ratio;
+                const adjCap = baseCap + addedCap - attrCap;
+                const implFte = adjCap / ratio;
+                const effPct = adjCap > 0 ? (census / adjCap) * 100 : 0;
+                const tgtPct = window.utilizationTargets[id][idx] || defaultTarget;
+
+                if (labelEl) labelEl.textContent = m.name;
+                if (censusEl) censusEl.textContent = Math.round(census).toLocaleString();
+                if (capEl) capEl.textContent = Math.round(adjCap).toLocaleString();
+                if (fteEl) fteEl.textContent = implFte.toFixed(2);
+                if (tgtLabelEl) tgtLabelEl.textContent = `(${tgtPct}% Tgt)`;
+                if (pctEl) pctEl.textContent = effPct.toFixed(1) + '%';
+                
+                if (barEl) {
+                    let barWidth = Math.min(effPct, 100);
+                    barEl.style.width = barWidth + '%';
+                    
+                    if (effPct < (tgtPct - 7)) {
+                        barEl.className = 'h-full bg-blue-500 transition-all duration-500'; 
+                    } else if (effPct <= (tgtPct + 3)) {
+                        barEl.className = 'h-full bg-emerald-500 transition-all duration-500'; 
+                    } else {
+                        barEl.className = 'h-full bg-rose-500 transition-all duration-500'; 
+                    }
+                }
+                
+                const markerEl = document.getElementById(`eff-${id}-marker`);
+                if (markerEl) markerEl.style.left = tgtPct + '%';
+            };
+
+            const tAdded = window.getHypotheticalCapacity(idx, 'therapy') + window.getHypotheticalCapacity(idx, 'therapyPre');
+            updateDiscipline('Therapy', 'therapy', m.therapyCapacity, m.therapyCensus, tAdded, 25, 87);
+
+            const cAdded = window.getHypotheticalCapacity(idx, 'coaching');
+            updateDiscipline('Coaching', 'coaching', m.coachingCapacity, m.coachingCensus, cAdded, 22, 87);
+
+            const pAdded = window.getHypotheticalCapacity(idx, 'psych25') + window.getHypotheticalCapacity(idx, 'psych50');
+            updateDiscipline('Psychiatry', 'psychiatry', m.psychiatryCapacity, m.psychiatryCensus, pAdded, 224, 85);
+        };
+
+        window.toggleScenarioFilter = function(discipline) {
+            if (window.currentScenarioFilters.includes(discipline)) {
+                if (window.currentScenarioFilters.length > 1) {
+                    window.currentScenarioFilters = window.currentScenarioFilters.filter(d => d !== discipline);
+                } else {
+                    return; 
+                }
+            } else {
+                window.currentScenarioFilters.push(discipline);
+            }
+            
+            ['therapy', 'coaching', 'psychiatry'].forEach(d => {
+                const btn = document.getElementById(`tab-filter-${d}`);
+                if (!btn) return;
+                if (window.currentScenarioFilters.includes(d)) {
+                    btn.className = "px-4 py-1.5 text-xs font-bold rounded-lg bg-indigo-50 dark:bg-indigo-500/20 shadow-sm text-indigo-600 dark:text-indigo-400 transition-all border border-indigo-100 dark:border-indigo-500/30";
+                } else {
+                    btn.className = "px-4 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all border border-transparent";
+                }
+            });
+
+            const rows = document.querySelectorAll('tr[scenario-row="true"]');
+            rows.forEach(r => {
+                const rowDisc = r.getAttribute('data-disc');
+                if (window.currentScenarioFilters.includes(rowDisc)) {
+                    r.classList.remove('hidden');
+                } else {
+                    r.classList.add('hidden');
+                }
+            });
+
+            const wfRows = document.querySelectorAll('tr[waterfall-row="true"]');
+            wfRows.forEach(r => {
+                const rowDisc = r.getAttribute('data-disc');
+                if (window.currentScenarioFilters.includes(rowDisc)) {
+                    r.classList.remove('hidden');
+                } else {
+                    r.classList.add('hidden');
+                }
+            });
+        };
+
+        window.toggleWaterfallTable = function() {
+            const wrapper = document.getElementById('waterfall-table-wrapper');
+            const icon = document.getElementById('waterfall-collapse-icon');
+            window.isWaterfallCollapsed = !window.isWaterfallCollapsed;
+            if (window.isWaterfallCollapsed) {
+                wrapper.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            } else {
+                wrapper.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            }
+        };
+
+        window.renderWaterfallTable = function() {
+            const head = document.getElementById('waterfall-header');
+            const body = document.getElementById('waterfall-body');
+            if (!head || !body) return;
+
+            let headHtml = `<th class="py-2.5 px-4 text-slate-400 text-xs font-bold w-48">Headcount Roll-Forward</th>`;
+            window.computedMonths.forEach((m) => {
+                headHtml += `<th class="py-2.5 px-3 text-center text-xs font-bold text-slate-700 dark:text-slate-300 border-l border-slate-200/50 dark:border-slate-800/40">${m.name}</th>`;
+            });
+            head.innerHTML = headHtml;
+            body.innerHTML = '';
+
+            const disciplines = [
+                { id: 'therapy', label: 'Therapy Total Headcount', baseline: parseFloat(window.staticMetrics.Therapy.hired) || 95.4, attrObj: window.strategicAssumptions.therapy,
+                  getSignFTE: (m) => (window.scenarioHires[m.name].therapy.signed * 1.0) + (window.scenarioHires[m.name].therapyPre.signed * 0.8),
+                  getOpenFTE: (m) => (window.scenarioHires[m.name].therapy.open * 1.0) + (window.scenarioHires[m.name].therapyPre.open * 0.8),
+                  getHypFTE: (m) => (window.scenarioHires[m.name].therapy.hypo * 1.0) + (window.scenarioHires[m.name].therapyPre.hypo * 0.8),
+                  getSignHC: (m) => (window.scenarioHires[m.name].therapy.signed) + (window.scenarioHires[m.name].therapyPre.signed),
+                  getOpenHC: (m) => (window.scenarioHires[m.name].therapy.open) + (window.scenarioHires[m.name].therapyPre.open),
+                  getHypHC: (m) => (window.scenarioHires[m.name].therapy.hypo) + (window.scenarioHires[m.name].therapyPre.hypo)
+                },
+                { id: 'coaching', label: 'Coaching Total Headcount', baseline: parseFloat(window.staticMetrics.Coaching.hired) || 96, attrObj: window.strategicAssumptions.coaching,
+                  getSignFTE: (m) => (window.scenarioHires[m.name].coaching.signed * 1.0),
+                  getOpenFTE: (m) => (window.scenarioHires[m.name].coaching.open * 1.0),
+                  getHypFTE: (m) => (window.scenarioHires[m.name].coaching.hypo * 1.0),
+                  getSignHC: (m) => (window.scenarioHires[m.name].coaching.signed),
+                  getOpenHC: (m) => (window.scenarioHires[m.name].coaching.open),
+                  getHypHC: (m) => (window.scenarioHires[m.name].coaching.hypo)
+                },
+                { id: 'psychiatry', label: 'Psychiatry Total Headcount', baseline: parseFloat(window.staticMetrics.Psychiatry.hired) || 21.0, attrObj: window.strategicAssumptions.psychiatry,
+                  getSignFTE: (m) => (window.scenarioHires[m.name].psych25.signed * 0.25) + (window.scenarioHires[m.name].psych50.signed * 0.50),
+                  getOpenFTE: (m) => (window.scenarioHires[m.name].psych25.open * 0.25) + (window.scenarioHires[m.name].psych50.open * 0.50),
+                  getHypFTE: (m) => (window.scenarioHires[m.name].psych25.hypo * 0.25) + (window.scenarioHires[m.name].psych50.hypo * 0.50),
+                  getSignHC: (m) => (window.scenarioHires[m.name].psych25.signed) + (window.scenarioHires[m.name].psych50.signed),
+                  getOpenHC: (m) => (window.scenarioHires[m.name].psych25.open) + (window.scenarioHires[m.name].psych50.open),
+                  getHypHC: (m) => (window.scenarioHires[m.name].psych25.hypo) + (window.scenarioHires[m.name].psych50.hypo)
+                }
+            ];
+
+            disciplines.forEach(disc => {
+                let isHidden = !window.currentScenarioFilters.includes(disc.id) ? 'hidden' : '';
+                let startRow = `<tr waterfall-row="true" data-disc="${disc.id}" class="bg-slate-50/30 dark:bg-slate-800/10 ${isHidden}"><td class="py-1.5 px-4 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">${disc.label} Start</td>`;
+                let signRow = `<tr waterfall-row="true" data-disc="${disc.id}" class="${isHidden}"><td class="py-1.5 px-4 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 pl-6">(+) Signed Offers</td>`;
+                let openRow = `<tr waterfall-row="true" data-disc="${disc.id}" class="${isHidden}"><td class="py-1.5 px-4 text-[10px] font-bold text-blue-600 dark:text-blue-400 pl-6">(+) Open Approved Reqs</td>`;
+                let hypRow = `<tr waterfall-row="true" data-disc="${disc.id}" class="${isHidden}"><td class="py-1.5 px-4 text-[10px] font-bold text-amber-600 dark:text-amber-400 pl-6">(+) Hypothetical Additions</td>`;
+                let attrRow = `<tr waterfall-row="true" data-disc="${disc.id}" class="${isHidden}"><td class="py-1.5 px-4 text-[10px] font-bold text-rose-500 pl-6">(-) Expected Attrition</td>`;
+                let endRow = `<tr waterfall-row="true" data-disc="${disc.id}" class="bg-slate-50 dark:bg-slate-800/40 border-b-4 border-slate-100 dark:border-slate-800 ${isHidden}"><td class="py-2 px-4 text-[11px] font-extrabold text-slate-800 dark:text-slate-200 uppercase">${disc.label} End</td>`;
+
+                let runningHC = disc.baseline;
+
+                window.computedMonths.forEach((m) => {
+                    let active = window.isMonthActive(disc.id === 'psychiatry' ? 'Psychiatry' : disc.id.charAt(0).toUpperCase() + disc.id.slice(1), m.name);
+                    
+                    if (!active) {
+                        startRow += `<td class="py-1.5 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 text-slate-400">-</td>`;
+                        signRow += `<td class="py-1.5 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 text-slate-400">-</td>`;
+                        openRow += `<td class="py-1.5 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 text-slate-400">-</td>`;
+                        hypRow += `<td class="py-1.5 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 text-slate-400">-</td>`;
+                        attrRow += `<td class="py-1.5 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 text-slate-400">-</td>`;
+                        endRow += `<td class="py-2 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 font-extrabold text-slate-400">Ignored</td>`;
+                    } else {
+                        let startHC = runningHC;
+                        let addedSignFTE = disc.getSignFTE(m);
+                        let addedSignHC = disc.getSignHC(m);
+                        let addedOpenFTE = disc.getOpenFTE(m);
+                        let addedOpenHC = disc.getOpenHC(m);
+                        let addedHypFTE = disc.getHypFTE(m);
+                        let addedHypHC = disc.getHypHC(m);
+                        let attrition = disc.attrObj.attrition; 
+
+                        runningHC = startHC + addedSignHC + addedOpenHC + addedHypHC - attrition;
+
+                        startRow += `<td class="py-1.5 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 font-bold text-slate-600 dark:text-slate-300">${startHC.toFixed(2)}</td>`;
+                        
+                        const signText = addedSignHC > 0 ? `<div class="flex flex-col items-center"><span class="font-bold text-emerald-600 dark:text-emerald-400">+${addedSignFTE.toFixed(2)} FTE</span><span class="text-[9px] text-slate-400 dark:text-slate-500 font-medium leading-none mt-0.5">(${addedSignHC} Hires)</span></div>` : `<span class="text-slate-400">-</span>`;
+                        signRow += `<td class="py-1.5 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 align-middle">${signText}</td>`;
+
+                        const openText = addedOpenHC > 0 ? `<div class="flex flex-col items-center"><span class="font-bold text-blue-600 dark:text-blue-400">+${addedOpenFTE.toFixed(2)} FTE</span><span class="text-[9px] text-slate-400 dark:text-slate-500 font-medium leading-none mt-0.5">(${addedOpenHC} Hires)</span></div>` : `<span class="text-slate-400">-</span>`;
+                        openRow += `<td class="py-1.5 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 align-middle">${openText}</td>`;
+                        
+                        const hypText = addedHypHC > 0 ? `<div class="flex flex-col items-center"><span class="font-bold text-amber-600 dark:text-amber-400">+${addedHypFTE.toFixed(2)} FTE</span><span class="text-[9px] text-slate-400 dark:text-slate-500 font-medium leading-none mt-0.5">(${addedHypHC} Hires)</span></div>` : `<span class="text-slate-400">-</span>`;
+                        hypRow += `<td class="py-1.5 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 align-middle">${hypText}</td>`;
+                        
+                        attrRow += `<td class="py-1.5 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 text-rose-500 font-medium align-middle">${attrition > 0 ? '-' : ''}${attrition.toFixed(2)}</td>`;
+                        endRow += `<td class="py-2 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 font-black text-slate-800 dark:text-white text-[13px]">${runningHC.toFixed(2)}</td>`;
+                    }
+                });
+
+                body.innerHTML += startRow + `</tr>` + signRow + `</tr>` + openRow + `</tr>` + hypRow + `</tr>` + attrRow + `</tr>` + endRow + `</tr>`;
+            });
+        };
+    </script>
+</body>
+</html>
