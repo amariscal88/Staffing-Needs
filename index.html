@@ -185,14 +185,14 @@
             </div>
             <div class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div><label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Global Base GID URL</label><input id="csv-url-input" type="text" class="w-full bg-slate-50 dark:bg-slate-900 border rounded-lg py-2 px-3 text-xs font-mono outline-none" /></div>
-                    <div><label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">User State GID (Looker CRM)</label><input id="looker-gid-input" type="text" value="922377958" class="w-full bg-slate-50 dark:bg-slate-900 border rounded-lg py-2 px-3 text-xs font-mono outline-none" /></div>
-                    <div><label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">S&D Forecast GID (State Heatmap)</label><input id="sd-gid-input" type="text" value="975777941" class="w-full bg-slate-50 dark:bg-slate-900 border rounded-lg py-2 px-3 text-xs font-mono outline-none" /></div>
+                    <div><label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Global Base GID URL</label><input id="csv-url-input" type="text" class="w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-xs font-mono outline-none" /></div>
+                    <div><label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">User State GID (Looker CRM)</label><input id="looker-gid-input" type="text" value="922377958" class="w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-xs font-mono outline-none" /></div>
+                    <div><label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">S&D Forecast GID (State Heatmap)</label><input id="sd-gid-input" type="text" value="975777941" class="w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-xs font-mono outline-none" /></div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Archive Past Months (Start View From)</label>
-                        <select id="start-month-input" class="w-full bg-slate-50 dark:bg-slate-900 border rounded-lg py-2 px-3 text-xs outline-none">
+                        <select id="start-month-input" class="w-full bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 rounded-lg py-2 px-3 text-xs outline-none">
                             <option value="Auto">Auto-Detect Current Month</option><option value="Show All">Show All (No Archiving)</option><option value="June">June</option><option value="July">July</option><option value="August">August</option><option value="September">September</option><option value="October">October</option><option value="November">November</option><option value="December">December</option>
                         </select>
                     </div>
@@ -273,31 +273,31 @@
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
                         <span id="save-indicator" class="text-[10px] font-bold text-emerald-500 opacity-0 transition-opacity duration-300 whitespace-nowrap">✓ Saved to Cloud</span>
-                        <button onclick="window.toggleUtilTable()" class="text-xs px-3 py-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 border rounded-lg font-bold transition-colors flex items-center gap-1.5"><i data-lucide="target" class="w-3.5 h-3.5"></i> Target Utilizations</button>
-                        <button onclick="window.toggleAssumptionsTable()" class="text-xs px-3 py-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 border rounded-lg font-bold transition-colors flex items-center gap-1.5"><i data-lucide="sliders" class="w-3.5 h-3.5"></i> Attrition & Buffers</button>
-                        <button onclick="window.toggleRampTable()" class="text-xs px-3 py-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 border rounded-lg font-bold transition-colors flex items-center gap-1.5"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> Setup Ramps</button>
+                        <button onclick="window.toggleUtilTable()" class="text-xs px-3 py-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-slate-300 dark:border-slate-700 rounded-lg font-bold transition-colors flex items-center gap-1.5"><i data-lucide="target" class="w-3.5 h-3.5"></i> Target Utilizations</button>
+                        <button onclick="window.toggleAssumptionsTable()" class="text-xs px-3 py-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-slate-300 dark:border-slate-700 rounded-lg font-bold transition-colors flex items-center gap-1.5"><i data-lucide="sliders" class="w-3.5 h-3.5"></i> Attrition & Buffers</button>
+                        <button onclick="window.toggleRampTable()" class="text-xs px-3 py-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border border-slate-300 dark:border-slate-700 rounded-lg font-bold transition-colors flex items-center gap-1.5"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> Setup Ramps</button>
                         <button onclick="window.saveAllScenarios()" class="text-xs px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-colors flex items-center gap-1.5 shadow-sm"><i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i> Save Inputs to Cloud</button>
-                        <button onclick="window.restoreDefaultScenario()" class="text-xs px-2.5 py-1.5 bg-slate-100 hover:bg-rose-100 dark:bg-slate-800 text-slate-700 border rounded-lg font-bold"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="window.restoreDefaultScenario()" class="text-xs px-2.5 py-1.5 bg-slate-100 hover:bg-rose-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 rounded-lg font-bold"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
                     </div>
                 </div>
 
                 <div id="util-table-container" class="hidden mb-6 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                     <div class="mb-3"><h3 class="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wide flex items-center gap-1.5"><i data-lucide="target" class="w-3.5 h-3.5 text-indigo-500"></i> Dynamic Target Utilization Configurator</h3></div>
-                    <div class="overflow-x-auto w-full rounded-lg border border-slate-200 dark:border-slate-700"><table class="w-full text-left text-[11px]"><thead class="bg-white dark:bg-slate-850"><tr id="util-input-header"></tr></thead><tbody id="util-input-body"></tbody></table></div>
+                    <div class="overflow-x-auto w-full rounded-lg border border-slate-200 dark:border-slate-700"><table class="w-full text-left text-[11px]"><thead class="bg-white dark:bg-slate-800"><tr id="util-input-header"></tr></thead><tbody id="util-input-body"></tbody></table></div>
                 </div>
                 <div id="assumptions-table-container" class="hidden mb-6 bg-indigo-50/30 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100/50">
                     <div class="mb-3"><h3 class="text-[11px] font-extrabold text-indigo-700 dark:text-indigo-300 uppercase">Strategic Operational Assumptions</h3></div>
-                    <div class="overflow-x-auto w-full rounded-lg border border-slate-200/60 dark:border-slate-700"><table class="w-full text-left text-[11px]"><thead><tr class="bg-white dark:bg-slate-800 font-bold border-b border-slate-200 dark:border-slate-700"><th class="py-2 px-4 w-48">Discipline</th><th class="py-2 px-3 text-center">Expected Monthly Attrition (FTE)</th><th class="py-2 px-3 text-center">Target Minimum Surplus Buffer (FTE)</th></tr></thead><tbody id="assumptions-input-body"></tbody></table></div>
+                    <div class="overflow-x-auto w-full rounded-lg border border-slate-200/60 dark:border-slate-700"><table class="w-full text-left text-[11px]"><thead><tr class="bg-white dark:bg-slate-800 text-slate-500 font-bold border-b border-slate-200 dark:border-slate-700"><th class="py-2 px-4 w-48">Discipline</th><th class="py-2 px-3 text-center">Expected Monthly Attrition (FTE)</th><th class="py-2 px-3 text-center">Target Minimum Surplus Buffer (FTE)</th></tr></thead><tbody id="assumptions-input-body"></tbody></table></div>
                 </div>
                 <div id="ramp-table-container" class="hidden mb-6 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                     <div class="flex justify-between items-center mb-3"><h3 class="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 uppercase">Provider Ramp Configuration</h3></div>
-                    <div class="overflow-x-auto w-full rounded-lg border border-slate-200"><table class="w-full text-left text-[11px]"><thead class="bg-white dark:bg-slate-800"><tr id="ramp-input-header"></tr></thead><tbody id="ramp-input-body"></tbody></table></div>
+                    <div class="overflow-x-auto w-full rounded-lg border border-slate-200 dark:border-slate-700"><table class="w-full text-left text-[11px]"><thead class="bg-white dark:bg-slate-800 text-slate-500"><tr id="ramp-input-header"></tr></thead><tbody id="ramp-input-body"></tbody></table></div>
                 </div>
 
-                <div class="sticky top-[72px] z-30 flex items-center gap-2 mb-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur p-1.5 rounded-xl w-max shadow-sm border border-slate-200 dark:border-slate-750">
-                    <button onclick="window.toggleScenarioFilter('therapy')" id="tab-filter-therapy" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-indigo-50 dark:bg-indigo-500/20 shadow-sm text-indigo-600 dark:text-indigo-400">Therapy</button>
-                    <button onclick="window.toggleScenarioFilter('coaching')" id="tab-filter-coaching" class="px-4 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white">Coaching</button>
-                    <button onclick="window.toggleScenarioFilter('psychiatry')" id="tab-filter-psychiatry" class="px-4 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white">Psychiatry</button>
+                <div class="sticky top-[72px] z-30 flex items-center gap-2 mb-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur p-1.5 rounded-xl w-max shadow-sm border border-slate-200 dark:border-slate-700">
+                    <button onclick="window.toggleScenarioFilter('therapy')" id="tab-filter-therapy" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-indigo-50 dark:bg-indigo-500/20 shadow-sm text-indigo-600 dark:text-indigo-400 transition-all border border-indigo-100 dark:border-indigo-500/30">Therapy</button>
+                    <button onclick="window.toggleScenarioFilter('coaching')" id="tab-filter-coaching" class="px-4 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-all border border-transparent">Coaching</button>
+                    <button onclick="window.toggleScenarioFilter('psychiatry')" id="tab-filter-psychiatry" class="px-4 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-all border border-transparent">Psychiatry</button>
                 </div>
 
                 <div class="overflow-x-auto w-full rounded-xl border border-slate-100 dark:border-slate-800 mb-6 shadow-sm"><table class="w-full text-left text-xs"><thead><tr id="scenario-input-header" class="bg-indigo-50/50 dark:bg-indigo-900/30 text-indigo-950 dark:text-indigo-200 uppercase font-extrabold border-b border-slate-200 dark:border-slate-800"></tr></thead><tbody id="scenario-input-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900"></tbody></table></div>
@@ -312,7 +312,7 @@
                         <i id="waterfall-collapse-icon" data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200 rotate-180"></i>
                     </div>
                     <div id="waterfall-table-wrapper" class="transition-all duration-300 overflow-hidden">
-                        <div class="overflow-x-auto w-full rounded-xl border border-slate-100 dark:border-slate-800"><table class="w-full text-left text-[11px]"><thead><tr id="waterfall-header" class="bg-slate-50 dark:bg-slate-800 text-slate-500 font-bold border-b border-slate-200"></tr></thead><tbody id="waterfall-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody></table></div>
+                        <div class="overflow-x-auto w-full rounded-xl border border-slate-100 dark:border-slate-800"><table class="w-full text-left text-[11px]"><thead><tr id="waterfall-header" class="bg-slate-50 dark:bg-slate-800 text-slate-500 font-bold border-b border-slate-200 dark:border-slate-700"></tr></thead><tbody id="waterfall-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody></table></div>
                     </div>
                 </div>
             </div>
@@ -321,7 +321,7 @@
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                     <div><h3 class="text-sm font-extrabold text-slate-900 dark:text-white">Projected Efficiency & Utilization Spotlight</h3></div>
-                    <select id="scenario-month-selector" onchange="window.updateScenarioSpotlight()" class="bg-slate-100 dark:bg-slate-800 text-xs font-bold p-1 px-3 rounded-lg border border-slate-200 dark:border-slate-700"></select>
+                    <select id="scenario-month-selector" onchange="window.updateScenarioSpotlight()" class="bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold p-1 px-3 rounded-lg border border-slate-200 dark:border-slate-700"></select>
                 </div>
                 <div id="efficiency-spotlight-container" class="grid grid-cols-1 md:grid-cols-3 gap-5"></div>
             </div>
@@ -339,114 +339,110 @@
             <div class="bg-blue-50/50 dark:bg-blue-950/20 border-l-4 border-blue-500 rounded-r-xl p-5 shadow-sm relative group mb-6">
                 <div class="flex justify-between items-start mb-3 cursor-pointer" onclick="window.toggleExecutiveSummary()">
                     <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-4.5 h-4.5 text-blue-600"></i><h3 class="text-[13px] font-extrabold text-blue-900 dark:text-blue-200 uppercase">Weekly Executive Summary Generator</h3><i id="exec-collapse-icon" data-lucide="chevron-down" class="w-4 h-4 text-blue-500 transition-transform"></i></div>
-                    <button onclick="event.stopPropagation(); window.copyExecutiveSummary();" class="text-[10px] font-bold bg-white dark:bg-slate-800 text-blue-600 border px-2.5 py-1.5 rounded-lg flex items-center gap-1.5"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Report</button>
+                    <button onclick="event.stopPropagation(); window.copyExecutiveSummary();" class="text-[10px] font-bold bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 border border-blue-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Report</button>
                 </div>
-                <div id="executive-summary-content-wrapper" class="hidden transition-all duration-300 overflow-hidden"><div id="executive-summary-content" class="text-[13px] leading-relaxed font-medium bg-white dark:bg-slate-900 p-4 rounded-lg border"></div></div>
+                <div id="executive-summary-content-wrapper" class="hidden transition-all duration-300 overflow-hidden"><div id="executive-summary-content" class="text-[13px] leading-relaxed font-medium bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 p-4 rounded-lg border border-slate-200 dark:border-slate-700"></div></div>
             </div>
 
             <!-- MASTER GRID -->
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-6 shadow-sm">
-                <div class="flex justify-between items-center pb-4 border-b">
-                    <div><h3 class="text-sm font-bold">Clinical Forecast Master Grid</h3></div>
-                    <div class="flex gap-2"><button onclick="window.toggleForecastTable()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-xs font-bold rounded-lg border flex items-center gap-1.5"><i id="collapse-icon" data-lucide="chevron-down" class="w-4 h-4 transition-transform"></i><span id="collapse-btn-text">Expand Forecast Grid</span></button><button onclick="window.exportToCSV()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-xs font-bold rounded-lg border flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export Transposed CSV</button></div>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                <div class="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-slate-800">
+                    <div><h3 class="text-sm font-bold text-slate-900 dark:text-white">Clinical Forecast Master Grid</h3></div>
+                    <div class="flex gap-2"><button onclick="window.toggleForecastTable()" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"><i id="collapse-icon" data-lucide="chevron-down" class="w-4 h-4 transition-transform"></i><span id="collapse-btn-text">Expand Forecast Grid</span></button><button onclick="window.exportToCSV()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export Transposed CSV</button></div>
                 </div>
-                <div id="collapsible-table-wrapper" class="hidden transition-all duration-300 mt-4 overflow-hidden"><div class="overflow-x-auto w-full"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 border-b uppercase"><th class="py-3 px-4 font-bold">Month</th><th class="py-3 px-4 text-right">Census</th><th class="py-3 px-4 text-center bg-teal-50/25">Therapy Capacity</th><th class="py-3 px-4 text-right bg-teal-50/25">Therapy FTE +/-</th><th class="py-3 px-4 text-center bg-indigo-50/25">Coaching Capacity</th><th class="py-3 px-4 text-right bg-indigo-50/25">Coaching FTE +/-</th><th class="py-3 px-4 text-center bg-amber-50/25">Psych Capacity</th><th class="py-3 px-4 text-right bg-amber-50/25">Psych FTE +/- (100%)</th></tr></thead><tbody id="master-table-body"></tbody></table></div></div>
+                <div id="collapsible-table-wrapper" class="hidden transition-all duration-300 mt-4 overflow-hidden"><div class="overflow-x-auto w-full"><table class="w-full text-left text-xs border-collapse"><thead><tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 border-b border-slate-200 dark:border-slate-700 uppercase"><th class="py-3 px-4 font-bold">Month</th><th class="py-3 px-4 text-right">Census</th><th class="py-3 px-4 text-center bg-teal-50/25 dark:bg-teal-900/20">Therapy Capacity</th><th class="py-3 px-4 text-right bg-teal-50/25 dark:bg-teal-900/20">Therapy FTE +/-</th><th class="py-3 px-4 text-center bg-indigo-50/25 dark:bg-indigo-900/20">Coaching Capacity</th><th class="py-3 px-4 text-right bg-indigo-50/25 dark:bg-indigo-900/20">Coaching FTE +/-</th><th class="py-3 px-4 text-center bg-amber-50/25 dark:bg-amber-900/20">Psych Capacity</th><th class="py-3 px-4 text-right bg-amber-50/25 dark:bg-amber-900/20">Psych FTE +/- (100%)</th></tr></thead><tbody id="master-table-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody></table></div></div>
                 <div id="table-collapsed-status" class="py-4 text-center text-xs text-slate-400 italic">Forecast grid is collapsed. Click "Expand Forecast Grid" above to review all transposed rows.</div>
             </div>
         </div>
 
         <!-- ========================================================= -->
-        <!-- TAB 2 CONTENT: STATE TELEHEALTH ROUTER (NEW SANDBOX)      -->
+        <!-- TAB 2 CONTENT: STATE TELEHEALTH ROUTER (SPLIT SCREEN)     -->
         <!-- ========================================================= -->
         <div id="view-states" class="hidden space-y-6 transition-all duration-200">
             
-            <!-- STATE ROUTER CONTROLS & TIMELINE -->
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 mb-4 gap-4">
-                    <div>
-                        <h2 class="text-base font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
-                            <i data-lucide="map" class="w-5 h-5"></i>
-                            Telehealth Cross-Licensure Optimization Sandbox
-                        </h2>
-                        <p class="text-xs text-slate-500 mt-0.5">Visualize monthly state-level deficits and simulate reallocation overrides. Red alerts clear out instantly as you route capacity.</p>
-                    </div>
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <button onclick="window.undoAllocation()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold flex items-center gap-1"><i data-lucide="undo" class="w-3.5 h-3.5"></i> Undo (Ctrl-Z)</button>
-                        <button onclick="window.redoAllocation()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold flex items-center gap-1"><i data-lucide="redo" class="w-3.5 h-3.5"></i> Redo</button>
-                        <button onclick="window.runLicensureOptimizer()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-extrabold flex items-center gap-1.5"><i data-lucide="wand2" class="w-3.5 h-3.5"></i> Optimize Allocations</button>
-                        <button onclick="window.resetStateBaseline()" class="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-bold" title="Reset allocations to spreadsheet baseline"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Baseline</button>
-                    </div>
-                </div>
-
-                <!-- STATE CHRONOLOGICAL MATRIX HEATMAP -->
-                <div class="overflow-x-auto rounded-xl border border-slate-200/60 dark:border-slate-800">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="bg-slate-50 dark:bg-slate-800 text-slate-500 uppercase tracking-wider font-extrabold border-b">
-                                <th class="py-2.5 px-4 sticky left-0 bg-slate-50 dark:bg-slate-800 z-10 w-24">State</th>
-                                <th class="py-2.5 px-3 text-center border-l">June</th>
-                                <th class="py-2.5 px-3 text-center border-l">July</th>
-                                <th class="py-2.5 px-3 text-center border-l">August</th>
-                                <th class="py-2.5 px-3 text-center border-l">September</th>
-                                <th class="py-2.5 px-3 text-center border-l">October</th>
-                                <th class="py-2.5 px-3 text-center border-l">November</th>
-                            </tr>
-                        </thead>
-                        <tbody id="state-heatmap-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 font-mono">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- TWO-COLUMN WORK SPACE (STATE DETAILS VS PROVIDERS LIST) -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <!-- Left Inspector (Selected State) -->
-                <div class="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-center border-b pb-3 mb-4">
-                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5"><i data-lucide="shield-alert" class="text-indigo-500"></i> Selected State Details</h3>
-                            <span id="selected-state-pill" class="text-xs font-black bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-3 py-1 rounded-full uppercase">MA</span>
-                        </div>
-                        <div class="space-y-4">
-                            <!-- Metrics -->
-                            <div class="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-850 p-3 rounded-xl border">
-                                <div><span class="text-[9px] font-bold text-slate-400 block uppercase">MTD Census</span><div id="inspector-census" class="text-base font-black">803</div></div>
-                                <div><span class="text-[9px] font-bold text-slate-400 block uppercase">FTE Surplus/Deficit</span><div id="inspector-deficit" class="text-base font-black text-rose-500">-4.90</div></div>
-                            </div>
-                            <!-- Licensed Providers currently assigned here -->
-                            <div>
-                                <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> Active Providers Assigned</h4>
-                                <div class="overflow-y-auto max-h-48 border rounded-lg divide-y divide-slate-100 dark:divide-slate-850" id="inspector-providers-list">
-                                    <!-- Populated dynamically -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-4 pt-3 border-t">
-                        <p class="text-[11px] text-slate-400 leading-relaxed italic">Clicking any provider in this list allows you to instantly alter their state capacity allocation on the right.</p>
-                    </div>
-                </div>
-
-                <!-- Right Simulator (User database & Licensure Allocator) -->
-                <div class="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-                    <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <!-- LEFT SIDE (7 Cols): Provider Simulator -->
+                <div class="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 dark:border-slate-800 pb-4 mb-4 gap-4">
                         <div>
-                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><i data-lucide="shield" class="w-4 h-4 text-emerald-500"></i> Provider State Capacity Allocation Manager</h3>
-                            <p class="text-xs text-slate-500">Search and adjust allocations. Add new licenses dynamically using the selector below.</p>
+                            <h2 class="text-base font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                                <i data-lucide="shield" class="w-5 h-5 text-emerald-500"></i> Provider State Capacity Allocation Manager
+                            </h2>
+                            <p class="text-[11px] text-slate-500 mt-1">Search active providers and drag sliders to simulate fractional re-allocations.</p>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <button onclick="window.runLicensureOptimizer()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-extrabold flex items-center gap-1.5 shadow-sm"><i data-lucide="wand2" class="w-3.5 h-3.5"></i> Optimize Allocations</button>
+                            <button onclick="window.exportOptimizations()" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold border border-slate-200 dark:border-slate-700" title="Export CSV of modified allocations"><i data-lucide="download" class="w-3.5 h-3.5"></i></button>
                         </div>
                     </div>
-                    <!-- Search & Filters -->
-                    <div class="flex flex-col sm:flex-row gap-3 mb-4">
-                        <div class="relative flex-grow">
+
+                    <!-- Search & History Actions -->
+                    <div class="flex flex-col sm:flex-row justify-between gap-3 mb-4">
+                        <div class="relative flex-grow max-w-sm">
                             <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-slate-400"></i>
-                            <input id="provider-search" oninput="window.renderProvidersSimulator()" type="text" placeholder="Search provider name or active license..." class="w-full bg-slate-50 dark:bg-slate-900 border rounded-lg py-2 pl-9 pr-4 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
+                            <input id="provider-search" oninput="window.renderProvidersSimulator()" type="text" placeholder="Search provider name or active license..." class="w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-lg py-2 pl-9 pr-4 text-xs focus:ring-1 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="window.undoAllocation()" class="px-3 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5"><i data-lucide="undo" class="w-3.5 h-3.5"></i> Undo</button>
+                            <button onclick="window.redoAllocation()" class="px-3 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5"><i data-lucide="redo" class="w-3.5 h-3.5"></i> Redo</button>
+                            <button onclick="window.resetStateBaseline()" class="px-2.5 py-2 bg-rose-50/50 hover:bg-rose-100 dark:bg-rose-900/20 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 rounded-lg text-xs font-bold transition-colors" title="Reset allocations to spreadsheet baseline"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
                         </div>
                     </div>
+
                     <!-- Provider List Grid -->
-                    <div class="overflow-y-auto max-h-96 border rounded-xl divide-y divide-slate-100 dark:divide-slate-800" id="provider-allocator-grid">
+                    <div class="overflow-y-auto flex-grow max-h-[600px] border border-slate-100 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800" id="provider-allocator-grid">
                         <!-- Populated dynamically -->
                     </div>
+                </div>
+
+                <!-- RIGHT SIDE (5 Cols): Heatmap & Inspector -->
+                <div class="lg:col-span-5 space-y-6 flex flex-col">
+                    
+                    <!-- Selected State Details Inspector -->
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5"><i data-lucide="shield-alert" class="text-indigo-500 w-4 h-4"></i> Selected State Details</h3>
+                            <span id="selected-state-pill" class="text-xs font-black bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full uppercase">MA</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 mb-4">
+                            <div><span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 block uppercase">MTD Census</span><div id="inspector-census" class="text-base font-black text-slate-900 dark:text-white">803</div></div>
+                            <div><span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 block uppercase">FTE Surplus/Deficit</span><div id="inspector-deficit" class="text-base font-black text-rose-500">-4.90</div></div>
+                        </div>
+                        <div>
+                            <h4 class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i> Active Providers Assigned</h4>
+                            <div class="overflow-y-auto max-h-32 border border-slate-100 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-700 bg-white dark:bg-slate-900" id="inspector-providers-list">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compact State Heatmap Matrix -->
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex-grow flex flex-col">
+                        <div class="mb-4">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5"><i data-lucide="map" class="text-indigo-500 w-4 h-4"></i> State FTE +/- Matrix</h3>
+                            <p class="text-[10px] text-slate-500 mt-0.5">Click a state row to inspect. Colors dynamically update as you reallocate providers.</p>
+                        </div>
+                        <div class="overflow-x-auto overflow-y-auto max-h-[350px] rounded-xl border border-slate-200 dark:border-slate-700 flex-grow relative">
+                            <table class="w-full text-left text-[11px] border-collapse relative">
+                                <thead>
+                                    <tr class="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-extrabold sticky top-0 z-20 shadow-sm">
+                                        <th class="py-2.5 px-3 sticky left-0 bg-slate-50 dark:bg-slate-800 z-30 w-16">State</th>
+                                        <th class="py-2.5 px-2 text-center border-l border-slate-200 dark:border-slate-700">Jun</th>
+                                        <th class="py-2.5 px-2 text-center border-l border-slate-200 dark:border-slate-700">Jul</th>
+                                        <th class="py-2.5 px-2 text-center border-l border-slate-200 dark:border-slate-700">Aug</th>
+                                        <th class="py-2.5 px-2 text-center border-l border-slate-200 dark:border-slate-700">Sep</th>
+                                        <th class="py-2.5 px-2 text-center border-l border-slate-200 dark:border-slate-700">Oct</th>
+                                        <th class="py-2.5 px-2 text-center border-l border-slate-200 dark:border-slate-700">Nov</th>
+                                        <th class="py-2.5 px-2 text-center border-l border-slate-200 dark:border-slate-700">Dec</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="state-heatmap-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 font-mono">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -562,24 +558,24 @@
             const spotContainer = document.getElementById('efficiency-spotlight-container');
             if (spotContainer) {
                 spotContainer.innerHTML = disciplines.map(d => `
-                    <div class="bg-slate-50 dark:bg-slate-850 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                         <div class="flex justify-between items-center mb-2">
-                            <h4 class="text-xs font-bold text-${d.color}-600">${d.name} Projection</h4>
-                            <span id="eff-${d.id}-label" class="text-[10px] font-bold">--</span>
+                            <h4 class="text-xs font-bold text-${d.color}-600 dark:text-${d.color}-400">${d.name} Projection</h4>
+                            <span id="eff-${d.id}-label" class="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded">--</span>
                         </div>
-                        <div class="space-y-1 text-xs mb-3 font-mono">
-                            <div class="flex justify-between"><span>Census Demand</span><span id="eff-${d.id}-census">--</span></div>
-                            <div class="flex justify-between"><span>Adjusted Capacity</span><span id="eff-${d.id}-cap">--</span></div>
-                            <div class="flex justify-between"><span>Implied Functional FTE</span><span id="eff-${d.id}-fte">--</span></div>
+                        <div class="space-y-1 text-xs mb-3 font-mono text-slate-600 dark:text-slate-300">
+                            <div class="flex justify-between border-b border-slate-200 dark:border-slate-700 pb-1"><span>Census Demand</span><span id="eff-${d.id}-census" class="font-bold text-slate-900 dark:text-white">--</span></div>
+                            <div class="flex justify-between border-b border-slate-200 dark:border-slate-700 pb-1"><span>Adjusted Capacity</span><span id="eff-${d.id}-cap" class="font-bold text-${d.color}-600 dark:text-${d.color}-400">--</span></div>
+                            <div class="flex justify-between pt-1"><span>Implied Functional FTE</span><span id="eff-${d.id}-fte" class="font-bold text-slate-900 dark:text-white">--</span></div>
                         </div>
                         <div>
-                            <div class="flex justify-between text-[9px] font-bold mb-1">
-                                <span>Efficiency <span id="eff-${d.id}-tgt-label">(${d.id==='psychiatry'?'85%':'87%'})</span></span>
-                                <span id="eff-${d.id}-pct-text">--%</span>
+                            <div class="flex justify-between text-[9px] font-bold mb-1 uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                <span>Efficiency <span id="eff-${d.id}-tgt-label" class="bg-slate-200 dark:bg-slate-700 px-1 rounded ml-1">(${d.id==='psychiatry'?'85%':'87%'})</span></span>
+                                <span id="eff-${d.id}-pct-text" class="text-slate-900 dark:text-white">--%</span>
                             </div>
                             <div class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full relative overflow-hidden">
                                 <div id="eff-${d.id}-bar" class="h-full bg-${d.color}-500 transition-all duration-500" style="width: 0%"></div>
-                                <div id="eff-${d.id}-marker" class="absolute top-0 bottom-0 w-0.5 bg-black dark:bg-white z-10" style="left: ${d.id==='psychiatry'?85:87}%"></div>
+                                <div id="eff-${d.id}-marker" class="absolute top-0 bottom-0 w-0.5 bg-slate-900 dark:bg-slate-100 z-10" style="left: ${d.id==='psychiatry'?85:87}%"></div>
                             </div>
                         </div>
                     </div>
@@ -738,6 +734,7 @@
             psychiatry: { attrition: 0.0, buffer: 0.0 }
         };
 
+        // Extracted directly from user links
         const DEFAULT_CSV_URL = 'https://docs.google.com/spreadsheets/d/1V_WA-1LObeHDMdg7WUmpwmMGGDY6hlBPBnuqGwckH_0/export?format=csv&gid=1421084607';
         const DEFAULT_LOOKER_GID = '922377958';
         const DEFAULT_SD_GID = '975777941';
@@ -773,42 +770,10 @@
         // Real State List Ingestion & Fallback Setup (June-December Matrix matching user S&D snapshot)
         window.statesList = ['MA', 'NJ', 'NH', 'CT', 'NY', 'PA', 'RI', 'ME', 'VA', 'OH', 'TX', 'IL', 'DC', 'FL', 'NC', 'GA', 'SC', 'MD', 'DE', 'WV', 'MO', 'WI', 'NV', 'AZ', 'CO', 'NM', 'MT', 'OK'];
         
-        window.stateFTEBaseline = {
-            MA: [2.25, 0.74, 1.31, 1.09, -0.18, -2.11, -4.90],
-            NJ: [-0.12, -0.11, 1.64, 1.35, 0.91, 1.17, 0.42],
-            NH: [0.91, 0.65, 0.53, 0.34, -0.26, -0.77, -1.29],
-            CT: [0.37, 0.19, 0.01, 0.13, -0.09, -0.08, -0.23],
-            NY: [-0.69, -1.39, 0.36, 0.73, 0.54, 0.07, -0.70],
-            PA: [-0.09, 0.10, 0.55, 0.61, 0.68, 1.02, 1.10],
-            RI: [0.45, 0.22, 0.55, 0.13, 0.07, -0.05, -0.09],
-            ME: [0.38, 0.68, 0.51, 0.38, 0.14, -0.13, -0.38],
-            VA: [0.71, 0.39, 0.25, -0.10, -0.12, -0.50, -0.84],
-            OH: [0.26, 0.43, 0.35, 0.28, 0.09, -0.06, -0.30],
-            TX: [0.08, 0.25, 0.20, 0.10, 0.08, -0.52, -1.11],
-            IL: [0.25, 0.13, 0.48, 0.20, 0.08, -0.18, -0.66],
-            DC: [0.09, 0.11, 0.04, -0.08, -0.14, -0.22, -0.34],
-            FL: [0.22, 0.28, 0.48, 0.36, -0.04, -0.24, -0.62],
-            NC: [0.16, 0.28, 0.28, 0.18, -0.10, -0.22, -0.32],
-            GA: [0.07, 0.01, -0.02, -0.09, 0.19, 0.26, 0.22],
-            SC: [0.07, 0.01, -0.02, -0.09, 0.19, 0.26, 0.22]
-        };
+        window.stateFTEBaseline = {};
+        window.stateCensusBaseline = {};
 
-        window.stateCensusBaseline = {
-            MA: [749, 711, 718, 746, 764, 803, 842],
-            NJ: [208, 197, 202, 218, 224, 241, 253],
-            NH: [86, 87, 92, 105, 115, 129, 143],
-            CT: [74, 69, 70, 72, 78, 86, 93],
-            NY: [245, 238, 241, 251, 261, 279, 297],
-            PA: [85, 85, 95, 104, 109, 119, 130],
-            RI: [27, 29, 30, 35, 40, 44, 48],
-            ME: [27, 29, 35, 41, 46, 53, 59],
-            VA: [83, 85, 90, 92, 99, 107, 115],
-            OH: [36, 35, 36, 38, 40, 47, 49],
-            TX: [43, 52, 62, 70, 79, 93, 105],
-            IL: [21, 24, 30, 40, 50, 64, 72]
-        };
-
-        // Populate zeros for remaining unlisted expansion states
+        // Populate zeros for unlisted expansion states to prevent crashes
         window.statesList.forEach(st => {
             if (!window.stateFTEBaseline[st]) window.stateFTEBaseline[st] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
             if (!window.stateCensusBaseline[st]) window.stateCensusBaseline[st] = [0, 0, 0, 0, 0, 0, 0];
@@ -890,10 +855,210 @@
             const savedUrl = localStorage.getItem(STORAGE_KEY_URL);
             const urlInput = document.getElementById('csv-url-input');
             if (urlInput) urlInput.value = savedUrl ? savedUrl : DEFAULT_CSV_URL;
+            
+            const savedLookerGid = localStorage.getItem(STORAGE_KEY_LOOKER_GID);
+            const lookerInput = document.getElementById('looker-gid-input');
+            if (lookerInput && savedLookerGid) lookerInput.value = savedLookerGid;
+            
+            const savedSdGid = localStorage.getItem(STORAGE_KEY_SD_GID);
+            const sdInput = document.getElementById('sd-gid-input');
+            if (sdInput && savedSdGid) sdInput.value = savedSdGid;
 
             window.fetchAndProcess();
             lucide.createIcons(); // Render lucide icons within dynamically generated HTML
         });
+
+        // -------------------------------------------------------------------------
+        // Core Fetch Engine (Promise.all)
+        // -------------------------------------------------------------------------
+        window.fetchAndProcess = async function() {
+            const syncIcon = document.getElementById('sync-icon');
+            if (syncIcon) syncIcon.classList.add('animate-spin');
+
+            const urlInput = document.getElementById('csv-url-input');
+            const lookerInput = document.getElementById('looker-gid-input');
+            const sdInput = document.getElementById('sd-gid-input');
+            
+            const baseCsvUrl = (urlInput && urlInput.value.trim()) || DEFAULT_CSV_URL;
+            const lookerGid = (lookerInput && lookerInput.value.trim()) || DEFAULT_LOOKER_GID;
+            const sdGid = (sdInput && sdInput.value.trim()) || DEFAULT_SD_GID;
+
+            // Extract Google Doc ID from base URL to dynamically build 3 endpoints
+            const docIdMatch = baseCsvUrl.match(/\/d\/(.*?)\//);
+            const docId = docIdMatch ? docIdMatch[1] : '1V_WA-1LObeHDMdg7WUmpwmMGGDY6hlBPBnuqGwckH_0';
+            const macroGidMatch = baseCsvUrl.match(/gid=([0-9]+)/);
+            const macroGid = macroGidMatch ? macroGidMatch[1] : '1421084607';
+
+            const cacheBuster = '&t=' + new Date().getTime();
+            const urlMacro = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${macroGid}${cacheBuster}`;
+            const urlLooker = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${lookerGid}${cacheBuster}`;
+            const urlSD = `https://docs.google.com/spreadsheets/d/${docId}/export?format=csv&gid=${sdGid}${cacheBuster}`;
+
+            try {
+                // Execute parallel fetch of all three database tabs
+                const responses = await Promise.all([
+                    fetch(urlMacro, { cache: 'no-store' }),
+                    fetch(urlLooker, { cache: 'no-store' }),
+                    fetch(urlSD, { cache: 'no-store' })
+                ]);
+
+                // Check for generic CORS/HTTP blocks
+                responses.forEach(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); });
+
+                const texts = await Promise.all(responses.map(r => r.text()));
+
+                // Parallel parsing
+                const results = await Promise.all(texts.map(text => {
+                    return new Promise((resolve, reject) => {
+                        Papa.parse(text, {
+                            header: false, skipEmptyLines: true,
+                            complete: function(res) { resolve(res.data); },
+                            error: function(err) { reject(err); }
+                        });
+                    });
+                }));
+
+                const macroData = results[0];
+                const lookerData = results[1];
+                const sdData = results[2];
+
+                if (macroData && macroData.length > 0) {
+                    window.csvRawData = macroData;
+                    window.parseHorizontalSpreadsheet();
+                }
+                
+                if (lookerData && lookerData.length > 0) {
+                    window.parseLookerDatabase(lookerData);
+                }
+                
+                if (sdData && sdData.length > 0) {
+                    window.parseSDDatabase(sdData);
+                }
+
+                // Snap the simulator buffers to the newly downloaded baselines
+                window.stateSimulatedFTE = JSON.parse(JSON.stringify(window.stateFTEBaseline));
+                window.simulatedProviders = JSON.parse(JSON.stringify(window.providersBaseline));
+                window.stateUndoStack = [];
+                window.stateRedoStack = [];
+
+                // Re-render everything with the live data
+                window.renderStateHeatmap();
+                window.renderInspectorState();
+                window.renderProvidersSimulator();
+                window.showSuccessBanner("Successfully synchronized all 3 Data Tabs with live Google Sheets!");
+
+            } catch (error) {
+                console.warn("Google Sheets direct CORS restricted. Running from local high-fidelity clinical simulation.", error);
+                window.csvRawData = mockSpreadsheetBackup;
+                try {
+                    window.parseHorizontalSpreadsheet();
+                    window.showWarningBanner("CORS Restriction Activated");
+                } catch (e) { console.error("Critical error in backup transposer", e); }
+            } finally {
+                if (syncIcon) syncIcon.classList.remove('animate-spin');
+            }
+            lucide.createIcons();
+        };
+
+        // -------------------------------------------------------------------------
+        // New Tab 2 Database Parsing Logic
+        // -------------------------------------------------------------------------
+        window.parseLookerDatabase = function(data) {
+            let newProviders = [];
+            let nIdx = -1, eIdx = -1, rIdx = -1, sIdx = -1, cIdx = -1;
+            
+            data.forEach((row, rNum) => {
+                if (rNum === 0 || nIdx === -1) {
+                    // Find Column Mappings Dynamically
+                    row.forEach((colStr, colNum) => {
+                        const h = String(colStr).toLowerCase().trim();
+                        if (h === 'name') nIdx = colNum;
+                        else if (h === 'email') eIdx = colNum;
+                        else if (h === 'role') rIdx = colNum;
+                        else if (h === 'state') sIdx = colNum;
+                        else if (h === 'capacity') cIdx = colNum;
+                    });
+                    return;
+                }
+                if (nIdx !== -1 && row[nIdx]) {
+                    newProviders.push({
+                        id: rNum,
+                        name: String(row[nIdx]).trim(),
+                        email: eIdx !== -1 ? String(row[eIdx]).trim() : '',
+                        role: rIdx !== -1 ? String(row[rIdx]).trim() : 'Therapist',
+                        state: sIdx !== -1 ? String(row[sIdx]).trim() : '',
+                        capacity: cIdx !== -1 ? window.cleanNum(row[cIdx]) : 0
+                    });
+                }
+            });
+            
+            if (newProviders.length > 0) {
+                window.providersBaseline = newProviders;
+            }
+        };
+
+        window.parseSDDatabase = function(data) {
+            let stateFTE = {};
+            let stateCensus = {};
+            window.statesList.forEach(s => { stateFTE[s] = [0,0,0,0,0,0,0]; stateCensus[s] = [0,0,0,0,0,0,0]; });
+
+            data.forEach(row => {
+                if (!row || row.length < 2) return;
+                const col0 = String(row[0] || '').trim().toUpperCase();
+                
+                // If it is exactly a two-letter state code we recognize
+                if (window.statesList.includes(col0)) {
+                    // Extract columns 1 through 7 (June-Dec)
+                    const rowData = row.slice(1, 8).map(v => window.cleanNum(v));
+                    
+                    // Heuristic to separate FTE rows from Census rows:
+                    // FTE differences are typically small (-15 to 15), while Census is large (> 20)
+                    const isProbablyCensus = Math.abs(rowData[0]) > 20 || Math.abs(rowData[6]) > 20;
+                    
+                    if (isProbablyCensus) {
+                        stateCensus[col0] = rowData;
+                    } else {
+                        stateFTE[col0] = rowData;
+                    }
+                }
+            });
+
+            window.stateFTEBaseline = stateFTE;
+            window.stateCensusBaseline = stateCensus;
+        };
+
+        // Export State Telehealth Optimization CSV
+        window.exportOptimizations = function() {
+            let csvStr = "data:text/csv;charset=utf-8,Provider Name,State,Original Allocation,Optimized Allocation,Net FTE Difference\n";
+            let diffCount = 0;
+            
+            window.simulatedProviders.forEach(p => {
+                const orig = window.providersBaseline.find(b => b.name === p.name && b.state === p.state);
+                const origCap = orig ? orig.capacity : 0;
+                
+                // Only log lines that were altered
+                if (Math.abs(origCap - p.capacity) > 0.001) {
+                    const diff = p.capacity - origCap;
+                    const diffStr = diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2);
+                    csvStr += `"${p.name}","${p.state}",${origCap.toFixed(2)},${p.capacity.toFixed(2)},${diffStr}\n`;
+                    diffCount++;
+                }
+            });
+
+            if (diffCount === 0) {
+                window.showWarningBanner("No optimizations have been made yet to export.");
+                return;
+            }
+
+            const encoded = encodeURI(csvStr);
+            const anchor = document.createElement('a');
+            anchor.setAttribute('href', encoded);
+            anchor.setAttribute('download', `Optimized_State_Allocations_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(anchor); 
+            anchor.click(); 
+            document.body.removeChild(anchor);
+            window.showSuccessBanner("Optimization plan exported successfully!");
+        };
 
         // -------------------------------------------------------------------------
         // Dynamic Multi-Tab Loader & Router UI Setup
@@ -1022,23 +1187,24 @@
             window.statesList.forEach(state => {
                 const tr = document.createElement('tr');
                 const isSelected = window.selectedStateCode === state;
-                tr.className = `hover:bg-slate-100/50 dark:hover:bg-slate-800/40 cursor-pointer border-b ${isSelected ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''}`;
+                tr.className = `hover:bg-slate-100/50 dark:hover:bg-slate-800/40 cursor-pointer border-b border-slate-100 dark:border-slate-800 ${isSelected ? 'bg-indigo-50/50 dark:bg-indigo-950/30' : ''}`;
                 tr.onclick = () => window.selectState(state);
 
-                let cellsHtml = `<td class="py-2 px-4 font-bold sticky left-0 z-10 ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400' : 'bg-white dark:bg-slate-900'}">${state}</td>`;
+                let cellsHtml = `<td class="py-2.5 px-3 font-bold sticky left-0 z-10 w-16 ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300' : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200'}">${state}</td>`;
                 
                 // Show 7 Months (June - Dec)
                 for (let i = 0; i < 7; i++) {
                     const val = window.stateSimulatedFTE[state] ? window.stateSimulatedFTE[state][i] || 0 : 0;
                     monthlyTotals[i] += val;
                     
-                    let colorClass = 'text-slate-500';
+                    let colorClass = 'text-slate-500 dark:text-slate-400';
                     let bgClass = 'transparent';
-                    if (val < -2.0) { colorClass = 'text-rose-700 dark:text-rose-400 font-extrabold'; bgClass = 'bg-rose-500/10 dark:bg-rose-500/5'; }
-                    else if (val < 0) { colorClass = 'text-orange-600 dark:text-orange-400 font-semibold'; bgClass = 'bg-orange-500/10 dark:bg-orange-500/5'; }
-                    else if (val > 0.5) { colorClass = 'text-teal-600 dark:text-teal-400 font-semibold'; bgClass = 'bg-teal-500/10 dark:bg-teal-500/5'; }
+                    if (val <= -2.0) { colorClass = 'text-rose-700 dark:text-rose-300 font-extrabold'; bgClass = 'bg-rose-500/15 dark:bg-rose-500/20'; }
+                    else if (val < -0.01) { colorClass = 'text-orange-600 dark:text-orange-300 font-semibold'; bgClass = 'bg-orange-500/10 dark:bg-orange-500/10'; }
+                    else if (val > 0.5) { colorClass = 'text-teal-600 dark:text-teal-400 font-semibold'; bgClass = 'bg-teal-500/10 dark:bg-teal-500/10'; }
+                    else if (val > 0.01) { colorClass = 'text-emerald-600 dark:text-emerald-400 font-medium'; bgClass = 'bg-emerald-500/5 dark:bg-emerald-500/5'; }
 
-                    cellsHtml += `<td class="py-2 px-3 text-center border-l ${bgClass} ${colorClass}">${val >= 0 ? '+' : ''}${val.toFixed(2)}</td>`;
+                    cellsHtml += `<td class="py-2.5 px-2 text-center border-l border-slate-100 dark:border-slate-800 ${bgClass} ${colorClass}">${val >= 0 ? '+' : ''}${val.toFixed(2)}</td>`;
                 }
 
                 tr.innerHTML = cellsHtml;
@@ -1047,14 +1213,14 @@
 
             // Add the dynamic totals row at the bottom
             const totalsTr = document.createElement('tr');
-            totalsTr.className = 'bg-slate-50 dark:bg-slate-800/60 font-extrabold border-t-2 border-slate-200 dark:border-slate-700';
-            let totalsHtml = `<td class="py-3 px-4 sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200">TOTAL</td>`;
+            totalsTr.className = 'bg-slate-50 dark:bg-slate-800/80 font-extrabold border-t-2 border-slate-200 dark:border-slate-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]';
+            let totalsHtml = `<td class="py-3 px-3 sticky left-0 z-10 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200">TOTAL</td>`;
             for (let i = 0; i < 7; i++) {
                 const val = monthlyTotals[i];
                 let colorClass = 'text-slate-700 dark:text-slate-300';
                 if (val < -0.01) colorClass = 'text-rose-600 dark:text-rose-400';
                 else if (val > 0.01) colorClass = 'text-emerald-600 dark:text-emerald-400';
-                totalsHtml += `<td class="py-3 px-3 text-center border-l ${colorClass}">${val >= 0 ? '+' : ''}${val.toFixed(2)}</td>`;
+                totalsHtml += `<td class="py-3 px-2 text-center border-l border-slate-200 dark:border-slate-700 ${colorClass}">${val >= 0 ? '+' : ''}${val.toFixed(2)}</td>`;
             }
             totalsTr.innerHTML = totalsHtml;
             tbody.appendChild(totalsTr);
@@ -1080,15 +1246,15 @@
             
             const inspectorDeficit = document.getElementById('inspector-deficit');
             inspectorDeficit.textContent = (novemberGap >= 0 ? '+' : '') + novemberGap.toFixed(2) + " FTE";
-            inspectorDeficit.className = "text-base font-black " + (novemberGap >= 0 ? 'text-teal-600' : 'text-rose-600');
+            inspectorDeficit.className = "text-base font-black " + (novemberGap >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-rose-600 dark:text-rose-400');
 
             // Find Providers licensed & allocated to this state
             const listContainer = document.getElementById('inspector-providers-list');
             listContainer.innerHTML = '';
 
-            const mappedProviders = window.simulatedProviders.filter(p => p.state === state);
+            const mappedProviders = window.simulatedProviders.filter(p => p.state === state && p.capacity > 0.01);
             if (mappedProviders.length === 0) {
-                listContainer.innerHTML = `<div class="py-4 text-center text-xs text-slate-400 italic">No providers currently allocated to ${state}</div>`;
+                listContainer.innerHTML = `<div class="py-4 text-center text-xs text-slate-400 italic">No providers currently actively allocated to ${state}</div>`;
             } else {
                 mappedProviders.forEach(p => {
                     const row = document.createElement('div');
@@ -1099,7 +1265,7 @@
                             <div class="font-bold text-slate-800 dark:text-slate-200">${p.name}</div>
                             <div class="text-[10px] text-slate-400">${p.email}</div>
                         </div>
-                        <span class="text-xs font-bold text-indigo-500">${(p.capacity * 100).toFixed(0)}% Allocation</span>
+                        <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">${(p.capacity * 100).toFixed(0)}% Allocation</span>
                     `;
                     listContainer.appendChild(row);
                 });
@@ -1154,11 +1320,11 @@
                 prov.allocations.forEach(alloc => {
                     stateInputsHtml += `
                         <div class="flex items-center gap-2">
-                            <span class="text-xs font-extrabold w-10 text-slate-500 uppercase">${alloc.state}</span>
+                            <span class="text-xs font-extrabold w-10 text-slate-500 dark:text-slate-400 uppercase">${alloc.state}</span>
                             <input type="range" min="0" max="1" step="0.05" value="${alloc.capacity}" 
                                 oninput="window.updateAllocationSimulation('${provNameEscape(prov.name)}', '${alloc.state}', this.value)" 
                                 class="flex-grow h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg cursor-pointer accent-indigo-500">
-                            <span class="text-xs font-mono font-bold w-12 text-right">${(alloc.capacity * 100).toFixed(0)}%</span>
+                            <span class="text-xs font-mono font-bold w-12 text-right text-slate-800 dark:text-slate-200">${(alloc.capacity * 100).toFixed(0)}%</span>
                         </div>
                     `;
                 });
@@ -1174,15 +1340,15 @@
                             <p class="text-[10px] text-slate-400">${prov.email} | ${prov.role}</p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${isLicenseWarning ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}">
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${isLicenseWarning ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}">
                                 ${activeLicenses.length} Licenses ${isLicenseWarning ? '(Over operational guideline)' : ''}
                             </span>
-                            <span class="text-xs font-black ${isOverAllocation ? 'text-rose-500 animate-pulse' : 'text-emerald-500'}">
+                            <span class="text-xs font-black ${isOverAllocation ? 'text-rose-500 animate-pulse' : 'text-emerald-500 dark:text-emerald-400'}">
                                 Total: ${totalAllocatedPct}% ${isOverAllocation ? '(Over Allocation)' : ''}
                             </span>
                         </div>
                     </div>
-                    <div class="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-850">
+                    <div class="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
                         ${stateInputsHtml}
                     </div>
                 `;
@@ -1235,7 +1401,7 @@
                 const stateGaps = window.stateSimulatedFTE[deficitState] || [0,0,0,0,0,0,0];
                 let gapFTE = stateGaps[5]; // November is index 5
                 
-                if (gapFTE < 0) {
+                if (gapFTE < -0.01) {
                     // Step 2: Find fully licensed providers holding this state's license who have capacity sitting elsewhere
                     const candidateProviders = window.simulatedProviders.filter(p => p.state === deficitState);
                     
@@ -1244,7 +1410,7 @@
                         const peerAllocations = window.simulatedProviders.filter(peer => peer.name === p.name && peer.state !== deficitState);
                         
                         peerAllocations.forEach(peer => {
-                            if (peer.capacity > 0.1 && gapFTE < 0) {
+                            if (peer.capacity > 0.05 && gapFTE < -0.01) {
                                 // Shift allocation
                                 const shiftVal = Math.min(peer.capacity, Math.abs(gapFTE));
                                 peer.capacity -= shiftVal;
@@ -1270,7 +1436,8 @@
                 window.renderProvidersSimulator();
                 window.showSuccessBanner("Licensure optimization engine complete! Rebalanced allocations to close high-risk deficits.");
             } else {
-                window.showWarningBanner("All active state allocations are already optimized. No surplus capacity can be dynamically reallocated.");
+                window.stateUndoStack.pop(); // Remove the empty state from stack
+                window.showWarningBanner("All active state allocations are already mathematically optimized. No surplus capacity can be dynamically reallocated without triggering new deficits.");
             }
         };
 
@@ -1308,55 +1475,6 @@
                 ind.classList.add('opacity-100');
                 setTimeout(() => { ind.classList.remove('opacity-100'); ind.classList.add('opacity-0'); }, 1500);
             }
-        };
-
-        window.fetchAndProcess = async function() {
-            const syncIcon = document.getElementById('sync-icon');
-            if (syncIcon) syncIcon.classList.add('animate-spin');
-
-            const urlInput = document.getElementById('csv-url-input');
-            const baseCsvUrl = (urlInput && urlInput.value.trim()) || DEFAULT_CSV_URL;
-            const separator = baseCsvUrl.includes('?') ? '&' : '?';
-            const csvUrl = baseCsvUrl + separator + 't=' + new Date().getTime();
-
-            try {
-                const response = await fetch(csvUrl, { cache: 'no-store' });
-                if (!response.ok) throw new Error(`HTTP status code error ${response.status}`);
-                const csvText = await response.text();
-
-                await new Promise((resolve, reject) => {
-                    Papa.parse(csvText, {
-                        header: false, skipEmptyLines: true,
-                        complete: function(results) {
-                            if (results.data && Math.round(results.data.length) > 0) {
-                                window.csvRawData = results.data;
-                                try {
-                                    window.parseHorizontalSpreadsheet();
-                                    window.showSuccessBanner("Successfully synchronized with live Google Sheets!");
-                                    resolve();
-                                } catch (e) {
-                                    console.error("Renderer error: ", e);
-                                    reject(e);
-                                }
-                            } else {
-                                reject(new Error("Parsed sheet contains empty rows"));
-                            }
-                        },
-                        error: function(err) { reject(new Error(`Parser Error: ${err.message}`)); }
-                    });
-                });
-            } catch (error) {
-                console.warn("Google Sheets direct CORS restricted. Running from local high-fidelity clinical simulation.", error);
-                window.csvRawData = mockSpreadsheetBackup;
-                try {
-                    window.parseHorizontalSpreadsheet();
-                    window.showWarningBanner("CORS Restriction Activated");
-                } catch (e) { console.error("Critical error in backup transposer", e); }
-            } finally {
-                const currentIcon = document.getElementById('sync-icon');
-                if (currentIcon) currentIcon.classList.remove('animate-spin');
-            }
-            lucide.createIcons();
         };
 
         window.isMonthHeader = function(str) {
@@ -1691,30 +1809,6 @@
             window.showSuccessBanner("Executive summary copied to clipboard!");
         };
 
-        window.restoreDefaultScenario = function() {
-            window.customConfirm(
-                "Reset Scenario Inputs",
-                "Are you sure you want to clear your current inputs and restore the defaults?",
-                () => {
-                    window.scenarioHires = {};
-                    window.providerRamps = JSON.parse(JSON.stringify(DEFAULT_RAMPS));
-                    window.strategicAssumptions = JSON.parse(JSON.stringify(DEFAULT_ASSUMPTIONS));
-                    
-                    window.initScenarioHires();
-                    try { window.renderAssumptionsTable(); } catch(e) {}
-                    try { window.renderRampTable(); } catch(e) {}
-                    try { window.renderUtilTable(); } catch(e) {}
-                    try { window.renderScenarioInputs(); } catch(e) {}
-                    try { window.renderScenarioOutput(); } catch(e) {}
-                    try { window.renderWaterfallTable(); } catch(e) {}
-                    try { window.renderTimeline(); } catch(e) {}
-                    try { window.renderExecutiveSummary(); } catch(e) {}
-                    
-                    window.saveAllScenarios();
-                }
-            );
-        };
-
         window.renderAssumptionsTable = function() {
             const tbody = document.getElementById('assumptions-input-body');
             if (!tbody) return;
@@ -1831,15 +1925,15 @@
                     let totVal = signVal + openVal + hypVal;
 
                     trSigned += `<td class="py-1 px-2 border-l border-emerald-100/50 dark:border-slate-700/40 text-center">
-                        <input type="number" id="scenario-signed-${m.name}-${r.id}" min="0" max="99" value="${signVal}" class="w-12 bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded text-center text-xs py-1 font-bold focus:ring-1 focus:ring-emerald-500 focus:outline-none" oninput="window.previewScenario()">
+                        <input type="number" id="scenario-signed-${m.name}-${r.id}" min="0" max="99" value="${signVal}" class="w-12 bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-emerald-200 dark:border-emerald-800 rounded text-center text-xs py-1 font-bold focus:ring-1 focus:ring-emerald-500 focus:outline-none" oninput="window.previewScenario()">
                     </td>`;
 
                     trOpen += `<td class="py-1 px-2 border-l border-blue-100/50 dark:border-slate-700/40 text-center">
-                        <input type="number" id="scenario-open-${m.name}-${r.id}" min="0" max="99" value="${openVal}" class="w-12 bg-white dark:bg-slate-900 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded text-center text-xs py-1 font-bold focus:ring-1 focus:ring-blue-500 focus:outline-none" oninput="window.previewScenario()">
+                        <input type="number" id="scenario-open-${m.name}-${r.id}" min="0" max="99" value="${openVal}" class="w-12 bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-blue-200 dark:border-blue-800 rounded text-center text-xs py-1 font-bold focus:ring-1 focus:ring-blue-500 focus:outline-none" oninput="window.previewScenario()">
                     </td>`;
                     
                     trHyp += `<td class="py-1 px-2 border-l border-amber-100/50 dark:border-slate-700/40 text-center">
-                        <input type="number" id="scenario-hypo-${m.name}-${r.id}" min="0" max="99" value="${hypVal}" class="w-12 bg-white dark:bg-slate-900 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded text-center text-xs py-1 font-bold focus:ring-1 focus:ring-amber-500 focus:outline-none" oninput="window.previewScenario()">
+                        <input type="number" id="scenario-hypo-${m.name}-${r.id}" min="0" max="99" value="${hypVal}" class="w-12 bg-white dark:bg-slate-900 text-slate-900 dark:text-white border border-amber-200 dark:border-amber-800 rounded text-center text-xs py-1 font-bold focus:ring-1 focus:ring-amber-500 focus:outline-none" oninput="window.previewScenario()">
                     </td>`;
 
                     trTot += `<td class="py-2 px-2 border-l border-slate-200/50 dark:border-slate-800/40 text-center font-extrabold text-slate-800 dark:text-white text-sm" id="scenario-total-${m.name}-${r.id}">${totVal}</td>`;
@@ -2400,7 +2494,7 @@
             let headHtml = `<th class="py-2.5 px-4 text-slate-400 text-xs font-bold w-48">Discipline Focus</th>`;
             window.computedMonths.forEach((m, idx) => {
                 headHtml += `
-                    <th onclick="window.snapToMonth(${idx})" class="py-2.5 px-3 text-center text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer border-l" title="Click to inspect this month">
+                    <th onclick="window.snapToMonth(${idx})" class="py-2.5 px-3 text-center text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer border-l border-slate-200/50 dark:border-slate-800/40" title="Click to inspect this month">
                         <span class="hover:underline flex flex-col items-center">
                             <span>${m.name}</span>
                             <span class="text-[9px] font-normal text-indigo-500">Inspect</span>
@@ -2425,11 +2519,11 @@
                     const active = window.isMonthActive(disciplineKey, m.name);
                     const val = rowInfo.getValue(m);
                     if (!active) {
-                        trHtml += `<td onclick="window.snapToMonth(${idx})" class="py-3 px-2 text-center border-l cursor-pointer"><span class="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-1 rounded-md">Ignored</span></td>`;
+                        trHtml += `<td onclick="window.snapToMonth(${idx})" class="py-3 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 cursor-pointer"><span class="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-1 rounded-md">Ignored</span></td>`;
                     } else {
                         const pillBg = val >= 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/10' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/10';
                         const sign = val >= 0 ? '+' : '';
-                        trHtml += `<td onclick="window.snapToMonth(${idx})" class="py-3 px-2 text-center border-l cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all"><span class="text-xs font-extrabold px-2.5 py-1 rounded-md border ${pillBg}">${sign}${val.toFixed(2)}</span></td>`;
+                        trHtml += `<td onclick="window.snapToMonth(${idx})" class="py-3 px-2 text-center border-l border-slate-200/50 dark:border-slate-800/40 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all"><span class="text-xs font-extrabold px-2.5 py-1 rounded-md border ${pillBg}">${sign}${val.toFixed(2)}</span></td>`;
                     }
                 });
                 const tr = document.createElement('tr');
@@ -2738,12 +2832,12 @@
                 tr.innerHTML = `
                     <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">${m.name}</td>
                     <td class="py-3 px-4 text-right font-medium text-slate-600 dark:text-slate-400">${Math.round(m.therapyCensus).toLocaleString()}</td>
-                    <td class="py-3 px-4 text-center bg-teal-50/10 text-slate-600 dark:text-slate-300">${therapyCapStr}</td>
-                    <td class="py-3 px-4 text-right bg-teal-50/10 font-extrabold pr-4 ${therapyFteClass}">${therapyFteStr}</td>
-                    <td class="py-3 px-4 text-center bg-indigo-50/10 text-slate-600 dark:text-slate-300">${coachCapStr}</td>
-                    <td class="py-3 px-4 text-right bg-indigo-50/10 font-extrabold pr-4 ${coachFteClass}">${coachFteStr}</td>
-                    <td class="py-3 px-4 text-center bg-amber-50/10 text-slate-600 dark:text-slate-300">${psychCapStr}</td>
-                    <td class="py-3 px-4 text-right bg-amber-50/10 font-extrabold pr-4 ${psychFteClass}">${psychFteStr}</td>
+                    <td class="py-3 px-4 text-center bg-teal-50/10 dark:bg-teal-900/20 text-slate-600 dark:text-slate-300">${therapyCapStr}</td>
+                    <td class="py-3 px-4 text-right bg-teal-50/10 dark:bg-teal-900/20 font-extrabold pr-4 ${therapyFteClass}">${therapyFteStr}</td>
+                    <td class="py-3 px-4 text-center bg-indigo-50/10 dark:bg-indigo-900/20 text-slate-600 dark:text-slate-300">${coachCapStr}</td>
+                    <td class="py-3 px-4 text-right bg-indigo-50/10 dark:bg-indigo-900/20 font-extrabold pr-4 ${coachFteClass}">${coachFteStr}</td>
+                    <td class="py-3 px-4 text-center bg-amber-50/10 dark:bg-amber-900/20 text-slate-600 dark:text-slate-300">${psychCapStr}</td>
+                    <td class="py-3 px-4 text-right bg-amber-50/10 dark:bg-amber-900/20 font-extrabold pr-4 ${psychFteClass}">${psychFteStr}</td>
                 `;
                 tbody.appendChild(tr);
             });
