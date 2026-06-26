@@ -390,7 +390,6 @@
                                 <th class="py-2.5 px-3 text-center border-l">September</th>
                                 <th class="py-2.5 px-3 text-center border-l">October</th>
                                 <th class="py-2.5 px-3 text-center border-l">November</th>
-                                <th class="py-2.5 px-3 text-center border-l bg-slate-100/50 dark:bg-slate-900/50">Total Gaps</th>
                             </tr>
                         </thead>
                         <tbody id="state-heatmap-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900 font-mono">
@@ -1018,19 +1017,20 @@
             if (!tbody) return;
             tbody.innerHTML = '';
 
+            let monthlyTotals = [0, 0, 0, 0, 0, 0, 0];
+
             window.statesList.forEach(state => {
                 const tr = document.createElement('tr');
                 const isSelected = window.selectedStateCode === state;
                 tr.className = `hover:bg-slate-100/50 dark:hover:bg-slate-800/40 cursor-pointer border-b ${isSelected ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''}`;
                 tr.onclick = () => window.selectState(state);
 
-                let totalGaps = 0;
                 let cellsHtml = `<td class="py-2 px-4 font-bold sticky left-0 z-10 ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400' : 'bg-white dark:bg-slate-900'}">${state}</td>`;
                 
                 // Show 7 Months (June - Dec)
                 for (let i = 0; i < 7; i++) {
                     const val = window.stateSimulatedFTE[state] ? window.stateSimulatedFTE[state][i] || 0 : 0;
-                    totalGaps += (val < 0 ? val : 0);
+                    monthlyTotals[i] += val;
                     
                     let colorClass = 'text-slate-500';
                     let bgClass = 'transparent';
@@ -1041,10 +1041,23 @@
                     cellsHtml += `<td class="py-2 px-3 text-center border-l ${bgClass} ${colorClass}">${val >= 0 ? '+' : ''}${val.toFixed(2)}</td>`;
                 }
 
-                cellsHtml += `<td class="py-2 px-3 text-center border-l bg-slate-50/50 dark:bg-slate-800/30 font-bold ${totalGaps < 0 ? 'text-rose-600' : 'text-slate-400'}">${totalGaps.toFixed(2)}</td>`;
                 tr.innerHTML = cellsHtml;
                 tbody.appendChild(tr);
             });
+
+            // Add the dynamic totals row at the bottom
+            const totalsTr = document.createElement('tr');
+            totalsTr.className = 'bg-slate-50 dark:bg-slate-800/60 font-extrabold border-t-2 border-slate-200 dark:border-slate-700';
+            let totalsHtml = `<td class="py-3 px-4 sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200">TOTAL</td>`;
+            for (let i = 0; i < 7; i++) {
+                const val = monthlyTotals[i];
+                let colorClass = 'text-slate-700 dark:text-slate-300';
+                if (val < -0.01) colorClass = 'text-rose-600 dark:text-rose-400';
+                else if (val > 0.01) colorClass = 'text-emerald-600 dark:text-emerald-400';
+                totalsHtml += `<td class="py-3 px-3 text-center border-l ${colorClass}">${val >= 0 ? '+' : ''}${val.toFixed(2)}</td>`;
+            }
+            totalsTr.innerHTML = totalsHtml;
+            tbody.appendChild(totalsTr);
         };
 
         window.selectState = function(state) {
@@ -2146,6 +2159,677 @@
                 body.innerHTML += startRow + `</tr>` + signRow + `</tr>` + openRow + `</tr>` + hypRow + `</tr>` + attrRow + `</tr>` + endRow + `</tr>`;
             });
         };
+
+        window.renderSettingsMatrices = function() {
+            const exclusionsThead = document.getElementById('exclusions-thead');
+            const exclusionsTbody = document.getElementById('exclusions-tbody');
+            if (!exclusionsThead || !exclusionsTbody) return;
+
+            let headersHtml = `<th class="py-2.5 px-4 font-bold text-slate-500">Clinical Focus</th>`;
+            window.computedMonths.forEach(m => headersHtml += `<th class="py-2.5 px-3 font-bold text-slate-500 text-center">${m.name}</th>`);
+            exclusionsThead.innerHTML = headersHtml;
+
+            exclusionsTbody.innerHTML = '';
+            ['Therapy', 'Coaching', 'Psychiatry'].forEach(disc => {
+                const trEx = document.createElement('tr');
+                let rowEx = `<td class="py-2.5 px-4 font-semibold">${disc}</td>`;
+                window.computedMonths.forEach(m => {
+                    rowEx += `<td class="text-center"><input type="checkbox" ${window.isMonthActive(disc, m.name) ? 'checked' : ''} onchange="window.toggleMonthExclusion('${disc}', '${m.name}')" id="ignore-${disc}-${m.name}" class="rounded text-indigo-600 focus:ring-indigo-500"></td>`;
+                });
+                trEx.innerHTML = rowEx; exclusionsTbody.appendChild(trEx);
+            });
+        };
+
+        window.syncExclusionCheckboxes = function() {
+            window.computedMonths.forEach(m => { ['Therapy', 'Coaching', 'Psychiatry'].forEach(disc => { const cb = document.getElementById(`ignore-${disc}-${m.name}`); if (cb) cb.checked = window.isMonthActive(disc, m.name); }); });
+        };
+
+        window.syncMuteCheckboxes = function() {
+            // Unused in updated multi-tab context, kept for stability
+        };
+
+        window.toggleMonthExclusion = function(discipline, monthName) {
+            const checkbox = document.getElementById(`ignore-${discipline}-${monthName}`);
+            if (checkbox) window.ignoredMonths[discipline][monthName] = !checkbox.checked;
+            else window.ignoredMonths[discipline][monthName] = !window.ignoredMonths[discipline][monthName];
+            localStorage.setItem(STORAGE_KEY_EXCLUSIONS, JSON.stringify(window.ignoredMonths));
+            window.fetchAndProcess(); 
+        };
+
+        window.renderTimeline = function() {
+            const container = document.getElementById('hiring-timeline');
+            if (!container) return;
+            container.innerHTML = '';
+            let triggerCount = 0;
+
+            window.computedMonths.forEach((m, idx) => {
+                const gaps = [];
+
+                // Calculate Adjusted FTE for Therapy
+                const tTargetPct = (window.utilizationTargets.therapy[idx] || 87) / 100;
+                const tDynamicTarget = m.therapyCensus / tTargetPct;
+                const tBaseFTE = (m.therapyCapacity - tDynamicTarget) / 25;
+                const tAddedFTE = (window.getHypotheticalCapacity(idx, 'therapy') + window.getHypotheticalCapacity(idx, 'therapyPre')) / 25;
+                const tAttrFTE = window.strategicAssumptions.therapy.attrition * idx;
+                const therapyAdjFTE = tBaseFTE + tAddedFTE - tAttrFTE;
+
+                if (window.isMonthActive('Therapy', m.name) && therapyAdjFTE < 0) {
+                    gaps.push({ discipline: 'Therapy', role: 'Therapist', count: (0 - therapyAdjFTE).toFixed(1) });
+                }
+                
+                // Calculate Adjusted FTE for Coaching
+                const cTargetPct = (window.utilizationTargets.coaching[idx] || 87) / 100;
+                const cDynamicTarget = m.coachingCensus / cTargetPct;
+                const cBaseFTE = (m.coachingCapacity - cDynamicTarget) / 22;
+                const cAddedFTE = window.getHypotheticalCapacity(idx, 'coaching') / 22;
+                const cAttrFTE = window.strategicAssumptions.coaching.attrition * idx;
+                const coachingAdjFTE = cBaseFTE + cAddedFTE - cAttrFTE;
+
+                if (window.isMonthActive('Coaching', m.name) && coachingAdjFTE < 0) {
+                    gaps.push({ discipline: 'Coaching', role: 'Coach', count: (0 - coachingAdjFTE).toFixed(1) });
+                }
+                
+                // Calculate Adjusted FTE for Psychiatry (Using Custom Target)
+                const pTargetPct = (window.utilizationTargets.psychiatry[idx] || 85) / 100;
+                const pBaseFTE = (m.psychiatryCapacity - (m.psychiatryCensus * pTargetPct)) / 224;
+                const pAddedFTE = (window.getHypotheticalCapacity(idx, 'psych25') + window.getHypotheticalCapacity(idx, 'psych50')) / 224;
+                const pAttrFTE = window.strategicAssumptions.psychiatry.attrition * idx;
+                const psychAdjFTE = pBaseFTE + pAddedFTE - pAttrFTE;
+
+                if (window.isMonthActive('Psychiatry', m.name) && psychAdjFTE < 0) {
+                    gaps.push({ discipline: 'Psychiatry', role: 'Psychiatrist', count: (0 - psychAdjFTE).toFixed(2) });
+                }
+
+                const activeGaps = gaps.filter(g => !window.isAlertMuted(g.discipline, m.name));
+                const card = document.createElement('div');
+                card.className = "p-4 rounded-xl border bg-white dark:bg-slate-900 transition-all shadow-sm flex flex-col justify-between";
+
+                if (gaps.length > 0) {
+                    if (activeGaps.length > 0) {
+                        triggerCount += activeGaps.length;
+                        card.className += " border-rose-200 dark:border-rose-950 bg-rose-50/10 dark:bg-rose-950/5 shadow-inner-rose";
+                    } else { card.className += " border-slate-200 dark:border-slate-850 opacity-80"; }
+
+                    let actionHtml = '<div class="space-y-1.5">';
+                    gaps.forEach(g => {
+                        const isMuted = window.isAlertMuted(g.discipline, m.name);
+                        if (!isMuted) {
+                            actionHtml += `<div class="flex items-center justify-between p-1.5 px-2 text-[11px] font-bold bg-rose-500/10 text-rose-600 rounded-md"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span> ${g.discipline} Deficit: ${g.count} FTE</span><button onclick="window.toggleAlertMute('${g.discipline}', '${m.name}')" class="text-rose-400 hover:text-rose-600 ml-2"><i data-lucide="eye-off" class="w-3.5 h-3.5"></i></button></div>`;
+                        } else {
+                            actionHtml += `<div class="flex items-center justify-between p-1.5 px-2 text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-md opacity-75"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-slate-400 rounded-full"></span> Muted: ${g.discipline} (${g.count} FTE)</span><button onclick="window.toggleAlertMute('${g.discipline}', '${m.name}')" class="text-slate-400 hover:text-slate-600 ml-2"><i data-lucide="eye" class="w-3.5 h-3.5"></i></button></div>`;
+                        }
+                    });
+                    actionHtml += '</div>';
+
+                    card.innerHTML = `<div class="flex justify-between items-center border-b pb-2 mb-2"><span class="font-bold text-sm text-slate-800 dark:text-slate-100">${m.name}</span><span class="text-[9px] font-extrabold uppercase ${activeGaps.length > 0 ? 'bg-rose-500 text-white' : 'bg-slate-300 dark:bg-slate-700 text-slate-700'} px-2 py-0.5 rounded-full">${activeGaps.length > 0 ? 'Alert' : 'Muted'}</span></div>${actionHtml}`;
+                } else {
+                    card.className += " border-slate-200 dark:border-slate-800";
+                    let innerMsg = "Adjusted scenarios show capacity is safely balanced.";
+                    let statusLabel = `<span class="text-[9px] font-extrabold uppercase bg-emerald-500 text-white px-2 py-0.5 rounded-full">Stable</span>`;
+                    if (!window.isMonthActive('Therapy', m.name) && !window.isMonthActive('Coaching', m.name)) {
+                        innerMsg = "Therapy & Coaching tracking ignored for this period.";
+                        statusLabel = `<span class="text-[9px] font-bold uppercase bg-slate-300 dark:bg-slate-700 text-slate-700 px-2 py-0.5 rounded-full">Muted</span>`;
+                        card.className += " opacity-65";
+                    }
+                    card.innerHTML = `<div class="flex justify-between items-center border-b pb-2 mb-2"><span class="font-bold text-sm text-slate-800 dark:text-slate-100">${m.name}</span>${statusLabel}</div><p class="text-[11px] text-slate-400 italic">${innerMsg}</p>`;
+                }
+                container.appendChild(card);
+            });
+
+            const badge = document.getElementById('hiring-trigger-badge');
+            if (badge) {
+                if (triggerCount > 0) {
+                    badge.className = "text-xs font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 px-3 py-1 rounded-full flex items-center gap-1 animate-pulse";
+                    badge.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> ${triggerCount} Active Scenario Gaps`;
+                } else {
+                    badge.className = "text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full flex items-center gap-1";
+                    badge.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> Scenarios Stable`;
+                }
+            }
+            lucide.createIcons();
+        };
+
+        window.generateDisciplineSummary = function(id, name, pluralRole, caseloadRatio, rampIdOverride) {
+            let str = ``;
+            let deficitMonthIdx = -1;
+            let gapFTE = 0;
+            let gapPatients = 0;
+            let mName = '';
+
+            const bufferTarget = window.strategicAssumptions[id] ? window.strategicAssumptions[id].buffer : 0;
+            const attritionRate = window.strategicAssumptions[id] ? window.strategicAssumptions[id].attrition : 0;
+            const activeName = name === 'Psychiatry' ? 'Psychiatry' : name; 
+
+            for (let i = 0; i < window.computedMonths.length; i++) {
+                const m = window.computedMonths[i];
+                if (!window.isMonthActive(activeName, m.name) || window.isAlertMuted(activeName, m.name)) continue;
+
+                let utilTgt = window.utilizationTargets[id][i] || (id === 'psychiatry' ? 85 : 87);
+                let baseFTE = 0;
+                
+                if (id === 'therapy') baseFTE = (m.therapyCapacity - (m.therapyCensus / (utilTgt/100))) / 25;
+                if (id === 'coaching') baseFTE = (m.coachingCapacity - (m.coachingCensus / (utilTgt/100))) / 22;
+                if (id === 'psychiatry') baseFTE = (m.psychiatryCapacity - (m.psychiatryCensus * (utilTgt/100))) / 224;
+
+                const projectedFTE = baseFTE - (attritionRate * i);
+
+                if (projectedFTE < bufferTarget) {
+                    deficitMonthIdx = i;
+                    mName = m.name;
+                    gapFTE = projectedFTE - bufferTarget; 
+                    gapPatients = Math.ceil(Math.abs(gapFTE) * caseloadRatio);
+                    break;
+                }
+            }
+
+            if (deficitMonthIdx !== -1) {
+                const rId = rampIdOverride || id;
+                const rampM1 = window.providerRamps[rId][0] || 1;
+                const rampM2 = window.providerRamps[rId][1] || rampM1;
+                
+                const hiresCurrent = Math.ceil(gapPatients / rampM1);
+                const hiresPrior = Math.ceil(gapPatients / rampM2);
+                
+                const priorName = deficitMonthIdx > 0 ? window.computedMonths[deficitMonthIdx - 1].name : "the prior month";
+                const extraPatients = (hiresPrior * rampM2) - gapPatients;
+                const extraFTE = (extraPatients / caseloadRatio).toFixed(2);
+                
+                str += `<div class="mb-3"><strong class="text-rose-600 dark:text-rose-400">${name}:</strong> ${mName} deficit of ${gapFTE.toFixed(1)} FTE (approx. ${gapPatients} patients below safe operating buffers). To resolve this in ${mName}, it would require ${hiresCurrent} ${pluralRole} (yielding ${rampM1} capacity each). Or due to ramp scaling, hiring one month earlier in ${priorName} requires ${hiresPrior} ${pluralRole} (yielding ${rampM2} patients each in ${mName} +${extraFTE} FTE).</div>`;
+            } else {
+                str += `<div class="mb-3"><strong class="text-emerald-600 dark:text-emerald-400">${name}:</strong> Currently fully staffed and securely buffered across the active forecast scope. No immediate hiring interventions required.</div>`;
+            }
+
+            return str;
+        };
+
+        window.renderExecutiveSummary = function() {
+            const container = document.getElementById('executive-summary-content');
+            if (!container) return;
+            const today = new Date().toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+            let summaryText = `<div class="mb-3 font-extrabold text-blue-900 dark:text-blue-200">Capacity Snapshot - ${today}</div>`;
+            
+            let smallestFTE = 999;
+            let bottleneckMonth = null;
+            let firstDeficitMonth = null;
+            
+            window.computedMonths.forEach((m, idx) => {
+                let minMonthFTE = 999;
+                
+                if (window.isMonthActive('Therapy', m.name) && !window.isAlertMuted('Therapy', m.name)) {
+                    let tgt = (window.utilizationTargets.therapy[idx] || 87) / 100;
+                    let fte = (m.therapyCapacity - (m.therapyCensus/tgt)) / 25;
+                    let projected = fte - (window.strategicAssumptions.therapy.attrition * idx);
+                    if (projected < minMonthFTE) minMonthFTE = projected;
+                    if (projected < window.strategicAssumptions.therapy.buffer && !firstDeficitMonth) firstDeficitMonth = m.name;
+                }
+                
+                if (window.isMonthActive('Coaching', m.name) && !window.isAlertMuted('Coaching', m.name)) {
+                    let tgt = (window.utilizationTargets.coaching[idx] || 87) / 100;
+                    let fte = (m.coachingCapacity - (m.coachingCensus/tgt)) / 22;
+                    let projected = fte - (window.strategicAssumptions.coaching.attrition * idx);
+                    if (projected < minMonthFTE) minMonthFTE = projected;
+                    if (projected < window.strategicAssumptions.coaching.buffer && !firstDeficitMonth) firstDeficitMonth = m.name;
+                }
+
+                if (window.isMonthActive('Psychiatry', m.name) && !window.isAlertMuted('Psychiatry', m.name)) {
+                    let tgt = (window.utilizationTargets.psychiatry[idx] || 85) / 100;
+                    let fte = (m.psychiatryCapacity - (m.psychiatryCensus * tgt)) / 224;
+                    let projected = fte - (window.strategicAssumptions.psychiatry.attrition * idx);
+                    if (projected < minMonthFTE) minMonthFTE = projected;
+                    if (projected < window.strategicAssumptions.psychiatry.buffer && !firstDeficitMonth) firstDeficitMonth = m.name;
+                }
+                
+                if (minMonthFTE !== 999 && minMonthFTE < smallestFTE) {
+                    smallestFTE = minMonthFTE;
+                    bottleneckMonth = m.name;
+                }
+            });
+            
+            summaryText += `<div class="mb-4 pb-4 border-b border-blue-100 dark:border-blue-900/50"><strong class="text-blue-800 dark:text-blue-300">Quick Summary:</strong> Our projected capacity is functional but tracking tightly, with <strong>${bottleneckMonth ? bottleneckMonth : 'an upcoming period'}</strong> acting as our narrowest bottleneck (${smallestFTE === 999 ? '+0.0' : (smallestFTE >= 0 ? '+' : '') + smallestFTE.toFixed(2)} FTE). ${firstDeficitMonth ? '<strong>' + firstDeficitMonth + '</strong> remains the definitive high-risk threshold where active operations swing into deficits.' : 'We project stable margins throughout the active forecast scope.'}</div>`;
+            summaryText += window.generateDisciplineSummary('therapy', 'Therapy', 'Therapists', 25);
+            summaryText += window.generateDisciplineSummary('coaching', 'Coaching', 'Coaches', 22);
+            summaryText += window.generateDisciplineSummary('psychiatry', 'Psychiatry', 'Psychiatrists (0.50 FTE)', 224, 'psych50');
+            container.innerHTML = summaryText;
+        };
+
+        window.renderSnapshotMatrix = function() {
+            const headerRow = document.getElementById('snapshot-months-header');
+            const tbody = document.getElementById('snapshot-matrix-body');
+            if (!headerRow || !tbody) return;
+
+            let headHtml = `<th class="py-2.5 px-4 text-slate-400 text-xs font-bold w-48">Discipline Focus</th>`;
+            window.computedMonths.forEach((m, idx) => {
+                headHtml += `
+                    <th onclick="window.snapToMonth(${idx})" class="py-2.5 px-3 text-center text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer border-l" title="Click to inspect this month">
+                        <span class="hover:underline flex flex-col items-center">
+                            <span>${m.name}</span>
+                            <span class="text-[9px] font-normal text-indigo-500">Inspect</span>
+                        </span>
+                    </th>
+                `;
+            });
+            headerRow.innerHTML = headHtml;
+            tbody.innerHTML = '';
+            
+            const snapshotRows = [
+                { id: 'Therapy', label: 'Therapy FTE +/- (87% Static)', color: 'text-teal-600 dark:text-teal-400', getValue: (m) => m.therapyFteDiff },
+                { id: 'Coaching', label: 'Coaching FTE +/- (87% Static)', color: 'text-indigo-600 dark:text-indigo-400', getValue: (m) => m.coachingFteDiff },
+                { id: 'Psychiatry_100', label: 'Psychiatry FTE +/- (100% Static)', color: 'text-amber-500 dark:text-amber-500', getValue: (m) => m.psychiatryFte100, isPsych: true },
+                { id: 'Psychiatry_85', label: 'Psychiatry FTE +/- (85% Static)', color: 'text-orange-500 dark:text-orange-400', getValue: (m) => m.psychiatryFte85, isPsych: true }
+            ];
+
+            snapshotRows.forEach(rowInfo => {
+                let trHtml = `<td class="py-3 px-4 font-bold text-slate-800 dark:text-slate-200"><span class="${rowInfo.color}">${rowInfo.label}</span></td>`;
+                window.computedMonths.forEach((m, idx) => {
+                    const disciplineKey = rowInfo.isPsych ? 'Psychiatry' : rowInfo.id;
+                    const active = window.isMonthActive(disciplineKey, m.name);
+                    const val = rowInfo.getValue(m);
+                    if (!active) {
+                        trHtml += `<td onclick="window.snapToMonth(${idx})" class="py-3 px-2 text-center border-l cursor-pointer"><span class="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-1 rounded-md">Ignored</span></td>`;
+                    } else {
+                        const pillBg = val >= 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/10' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/10';
+                        const sign = val >= 0 ? '+' : '';
+                        trHtml += `<td onclick="window.snapToMonth(${idx})" class="py-3 px-2 text-center border-l cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all"><span class="text-xs font-extrabold px-2.5 py-1 rounded-md border ${pillBg}">${sign}${val.toFixed(2)}</span></td>`;
+                    }
+                });
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all";
+                tr.innerHTML = trHtml;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.renderCharts = function() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? '#334155' : '#e2e8f0';
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            const labels = window.computedMonths.map(m => m.name);
+
+            const canvasTherapy = document.getElementById('therapyCapacityChart');
+            if (canvasTherapy) {
+                if (window.therapyChartInstance) window.therapyChartInstance.destroy();
+                window.therapyChartInstance = new Chart(canvasTherapy.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Case Capacity', data: window.computedMonths.map(m => window.isMonthActive('Therapy', m.name) ? m.therapyCapacity : 0), backgroundColor: '#0d9488', borderRadius: 6, maxBarThickness: 24 },
+                            { label: 'Target (87% Buffered)', data: window.computedMonths.map(m => window.isMonthActive('Therapy', m.name) ? m.therapyUtilization : 0), backgroundColor: isDark ? '#475569' : '#cbd5e1', borderRadius: 6, maxBarThickness: 24 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: textColor, font: { size: 10 } } } }, scales: { y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } }, x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } } } }
+                });
+            }
+
+            const canvasCoaching = document.getElementById('coachingCapacityChart');
+            if (canvasCoaching) {
+                if (window.coachingChartInstance) window.coachingChartInstance.destroy();
+                window.coachingChartInstance = new Chart(canvasCoaching.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Case Capacity', data: window.computedMonths.map(m => window.isMonthActive('Coaching', m.name) ? m.coachingCapacity : 0), backgroundColor: '#6366f1', borderRadius: 6, maxBarThickness: 24 },
+                            { label: 'Target (87% Buffered)', data: window.computedMonths.map(m => window.isMonthActive('Coaching', m.name) ? m.coachingUtilization : 0), backgroundColor: isDark ? '#475569' : '#cbd5e1', borderRadius: 6, maxBarThickness: 24 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: textColor, font: { size: 10 } } } }, scales: { y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } }, x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } } } }
+                });
+            }
+
+            const canvasPsychiatry = document.getElementById('psychiatryCapacityChart');
+            if (canvasPsychiatry) {
+                if (window.psychiatryChartInstance) window.psychiatryChartInstance.destroy();
+                window.psychiatryChartInstance = new Chart(canvasPsychiatry.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Case Capacity', data: window.computedMonths.map(m => window.isMonthActive('Psychiatry', m.name) ? m.psychiatryCapacity : 0), backgroundColor: '#f59e0b', borderRadius: 6, maxBarThickness: 24 },
+                            { label: 'Target (85% Census)', data: window.computedMonths.map(m => window.isMonthActive('Psychiatry', m.name) ? m.psychiatryCensus * 0.85 : 0), backgroundColor: isDark ? '#475569' : '#cbd5e1', borderRadius: 6, maxBarThickness: 24 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: textColor, font: { size: 10 } } } }, scales: { y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } }, x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } } } }
+                });
+            }
+        };
+
+        window.populateSelector = function() {
+            const selector = document.getElementById('month-selector');
+            if (!selector) return;
+            selector.innerHTML = '';
+            window.computedMonths.forEach((m, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx; opt.textContent = m.name; selector.appendChild(opt);
+            });
+            selector.value = window.activeMonthIdx;
+            
+            const scenSelector = document.getElementById('scenario-month-selector');
+            if (scenSelector) {
+                scenSelector.innerHTML = '';
+                window.computedMonths.forEach((m, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = idx; opt.textContent = m.name; scenSelector.appendChild(opt);
+                });
+                scenSelector.value = window.scenarioSpotlightIdx;
+            }
+        };
+
+        window.snapToMonth = function(idx) {
+            window.activeMonthIdx = idx;
+            const selector = document.getElementById('month-selector');
+            if (selector) selector.value = idx;
+            window.updateDashboardDisplay();
+            const targetEl = document.getElementById('spotlight-section-target');
+            if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.changeActiveMonth = function() {
+            const selector = document.getElementById('month-selector');
+            if (selector) window.activeMonthIdx = parseInt(selector.value) || 0;
+            window.updateDashboardDisplay();
+        };
+
+        window.updateDashboardDisplay = function() {
+            if (window.computedMonths.length === 0) return;
+            const current = window.computedMonths[window.activeMonthIdx];
+            const elementsMapping = {
+                'therapy-static-hired': window.staticMetrics.Therapy.hired,
+                'therapy-static-functional': window.staticMetrics.Therapy.functional,
+                'therapy-static-eff': window.staticMetrics.Therapy.efficiency,
+                'coaching-static-hired': window.staticMetrics.Coaching.hired,
+                'coaching-static-functional': window.staticMetrics.Coaching.functional,
+                'coaching-static-eff': window.staticMetrics.Coaching.efficiency,
+                'psychiatry-static-hired': window.staticMetrics.Psychiatry.hired,
+                'psychiatry-static-functional': window.staticMetrics.Psychiatry.functional,
+                'psychiatry-static-eff': window.staticMetrics.Psychiatry.efficiency
+            };
+            for (const [id, value] of Object.entries(elementsMapping)) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            }
+
+            const isCurrentMonth = (window.activeMonthIdx === 0);
+            window.setCardMetrics('therapy', 'Therapy', current.name, current.therapyCensus, current.therapyUtilization, current.therapyCapacity, current.therapyDifference, current.therapyFteDiff, isCurrentMonth, window.globalActualCensus);
+            window.setCardMetrics('coaching', 'Coaching', current.name, current.coachingCensus, current.coachingUtilization, current.coachingCapacity, current.coachingDifference, current.coachingFteDiff, isCurrentMonth, window.globalActualCensus);
+            
+            const pActive = window.isMonthActive('Psychiatry', current.name);
+            const pBadge = document.getElementById(`psychiatry-status-badge`);
+            if (!pActive) {
+                const ids = ['psych-census-100', 'psych-cap-100', 'psych-diff-100', 'psych-fte-100', 'psych-census-85', 'psych-cap-85', 'psych-diff-85', 'psych-fte-85'];
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    if (id.includes('census') || id.includes('cap')) el.textContent = "Muted";
+                    else if (id.includes('diff-')) el.textContent = "N/A";
+                    else el.textContent = "Ignored";
+                });
+                if (pBadge) {
+                    pBadge.textContent = "Excluded";
+                    pBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500";
+                }
+            } else {
+                const pc100 = document.getElementById('psych-census-100');
+                if (pc100) {
+                    if (isCurrentMonth && window.globalActualCensus) pc100.innerHTML = `<span class="text-[9px] text-slate-400 mr-1">(${Math.round(window.globalActualCensus).toLocaleString()} MTD)</span> ${Math.round(current.psychiatryCensus).toLocaleString()}`;
+                    else pc100.textContent = Math.round(current.psychiatryCensus).toLocaleString();
+                }
+
+                const pcap100 = document.getElementById('psych-cap-100');
+                if (pcap100) pcap100.textContent = Math.round(current.psychiatryCapacity).toLocaleString();
+                
+                const d100 = current.psychiatryDiff100;
+                const d100El = document.getElementById('psych-diff-100');
+                if (d100El) { d100El.textContent = (d100 >= 0 ? '+' : '') + Math.round(d100).toLocaleString(); d100El.className = "font-extrabold text-sm " + (d100 >= 0 ? 'text-emerald-500' : 'text-rose-500'); }
+
+                const fte100 = current.psychiatryFte100;
+                const fte100El = document.getElementById('psych-fte-100');
+                if (fte100El) { fte100El.textContent = (fte100 >= 0 ? '+' : '') + fte100.toFixed(2); fte100El.className = "text-2xl font-black " + (fte100 >= 0 ? 'text-emerald-500' : 'text-rose-500'); }
+
+                const census85Val = current.psychiatryCensus * 0.85;
+                const pc85 = document.getElementById('psych-census-85');
+                if (pc85) {
+                    if (isCurrentMonth && window.globalActualCensus) pc85.innerHTML = `<span class="text-[9px] text-slate-400 mr-1">(${Math.round(window.globalActualCensus * 0.85).toLocaleString()} MTD)</span> ${Math.round(census85Val).toLocaleString()}`;
+                    else pc85.textContent = Math.round(census85Val).toLocaleString();
+                }
+
+                const pcap85 = document.getElementById('psych-cap-85');
+                if (pcap85) pcap85.textContent = Math.round(current.psychiatryCapacity).toLocaleString();
+
+                const d85 = current.psychiatryDiff85;
+                const d85El = document.getElementById('psych-diff-85');
+                if (d85El) { d85El.textContent = (d85 >= 0 ? '+' : '') + Math.round(d85).toLocaleString(); d85El.className = "font-extrabold text-sm " + (d85 >= 0 ? 'text-emerald-500' : 'text-rose-500'); }
+
+                const fte85 = current.psychiatryFte85;
+                const fte85El = document.getElementById('psych-fte-85');
+                if (fte85El) { fte85El.textContent = (fte85 >= 0 ? '+' : '') + fte85.toFixed(2); fte85El.className = "text-2xl font-black " + (fte85 >= 0 ? 'text-emerald-500' : 'text-rose-500'); }
+
+                if (pBadge) {
+                    if (fte85 < -0.1) { pBadge.textContent = "Deficit Gap"; pBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 animate-pulse"; }
+                    else { pBadge.textContent = "Staffed"; pBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600"; }
+                }
+            }
+
+            const mathMonthLabel = document.getElementById('math-month-label');
+            if (mathMonthLabel) mathMonthLabel.textContent = current.name;
+            window.renderMathSanbox(current);
+            lucide.createIcons();
+            try { window.updateScenarioSpotlight(); } catch(e) {}
+        };
+
+        window.setCardMetrics = function(id, disciplineKey, monthName, census, utilization, capacity, difference, fteDiff, isCurrentMonth = false, actualCensus = null) {
+            const active = window.isMonthActive(disciplineKey, monthName);
+            const elCensus = document.getElementById(`${id}-census`);
+            const elUtil = document.getElementById(`${id}-utilization`);
+            const elCap = document.getElementById(`${id}-capacity`);
+            const diffEl = document.getElementById(`${id}-difference`);
+            const fteEl = document.getElementById(`${id}-fte-diff`);
+            const badge = document.getElementById(`${id}-status-badge`);
+
+            if (!active) {
+                if (elCensus) elCensus.textContent = "Muted (Ignored)";
+                if (elUtil) elUtil.textContent = "Muted";
+                if (elCap) elCap.textContent = "Muted";
+                if (diffEl) { diffEl.textContent = "N/A"; diffEl.className = "font-bold text-slate-400 text-sm"; }
+                if (fteEl) { fteEl.textContent = "Ignored"; fteEl.className = "text-xl font-bold text-slate-400"; }
+                if (badge) { badge.textContent = "Excluded"; badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500"; }
+            } else {
+                if (elCensus) {
+                    if (isCurrentMonth && actualCensus) elCensus.innerHTML = `<span class="text-[10px] text-slate-400 mr-1">(${Math.round(actualCensus).toLocaleString()} MTD)</span> ${Math.round(census).toLocaleString()}`;
+                    else elCensus.textContent = Math.round(census).toLocaleString();
+                }
+                if (elUtil) elUtil.textContent = Math.round(utilization).toLocaleString();
+                if (elCap) elCap.textContent = Math.round(capacity).toLocaleString();
+                if (diffEl) { diffEl.textContent = (difference >= 0 ? '+' : '') + Math.round(difference).toLocaleString(); diffEl.className = "font-extrabold text-sm " + (difference >= 0 ? 'text-emerald-500' : 'text-rose-500'); }
+                if (fteEl) { fteEl.textContent = (fteDiff >= 0 ? '+' : '') + fteDiff.toFixed(2); fteEl.className = "text-2xl font-black " + (fteDiff >= 0 ? 'text-emerald-500' : 'text-rose-500'); }
+                if (badge) {
+                    if (fteDiff < -0.1) { badge.textContent = `Deficit Gap`; badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 animate-pulse"; }
+                    else { badge.textContent = "Staffed"; badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600"; }
+                }
+            }
+        };
+
+        window.renderMathSanbox = function(current) {
+            const tActive = window.isMonthActive('Therapy', current.name);
+            const cActive = window.isMonthActive('Coaching', current.name);
+            const pActive = window.isMonthActive('Psychiatry', current.name);
+
+            const tStep1 = document.getElementById('math-therapy-step1');
+            const tStep2 = document.getElementById('math-therapy-step2');
+            const tStep3 = document.getElementById('math-therapy-step3');
+            const tStep4 = document.getElementById('math-therapy-step4');
+            const tResult = document.getElementById('math-therapy-result');
+            if (!tActive) {
+                if (tStep1) tStep1.innerHTML = `<span class="text-slate-400 italic">Excluded</span>`;
+                if (tStep2) tStep2.innerHTML = `---`; if (tStep3) tStep3.innerHTML = `---`; if (tStep4) tStep4.innerHTML = `---`;
+                if (tResult) { tResult.textContent = "Ignored"; tResult.className = "text-sm font-bold text-slate-400"; }
+            } else {
+                if (tStep1) tStep1.innerHTML = `${current.therapyCensus.toLocaleString()} Census / 0.87 = <strong class="text-slate-950 dark:text-white">${Math.round(current.therapyUtilization).toLocaleString()}</strong>`;
+                if (tStep2) tStep2.innerHTML = `Direct spreadsheet value = <strong class="text-slate-950 dark:text-white">${Math.round(current.therapyCapacity).toLocaleString()}</strong>`;
+                if (tStep3) tStep3.innerHTML = `${Math.round(current.therapyCapacity).toLocaleString()} Cap - ${Math.round(current.therapyUtilization).toLocaleString()} Demand = <strong class="${current.therapyDifference >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${Math.round(current.therapyDifference).toLocaleString()}</strong>`;
+                if (tStep4) tStep4.innerHTML = `${Math.round(current.therapyDifference).toLocaleString()} Margin / 25 Ratio = <strong class="${current.therapyFteDiff >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${current.therapyFteDiff.toFixed(2)} FTE</strong>`;
+                if (tResult) { tResult.textContent = `${current.therapyFteDiff >= 0 ? '+' : ''}${current.therapyFteDiff.toFixed(2)} FTE`; tResult.className = `text-sm font-mono font-bold ${current.therapyFteDiff >= 0 ? 'text-emerald-500' : 'text-rose-500'}`; }
+            }
+
+            const cStep1 = document.getElementById('math-coaching-step1');
+            const cStep2 = document.getElementById('math-coaching-step2');
+            const cStep3 = document.getElementById('math-coaching-step3');
+            const cStep4 = document.getElementById('math-coaching-step4');
+            const cResult = document.getElementById('math-coaching-result');
+            if (!cActive) {
+                if (cStep1) cStep1.innerHTML = `<span class="text-slate-400 italic">Excluded</span>`;
+                if (cStep2) cStep2.innerHTML = `---`; if (cStep3) cStep3.innerHTML = `---`; if (cStep4) cStep4.innerHTML = `---`;
+                if (cResult) { cResult.textContent = "Ignored"; cResult.className = "text-sm font-bold text-slate-400"; }
+            } else {
+                if (cStep1) cStep1.innerHTML = `${current.coachingCensus.toLocaleString()} Census / 0.87 = <strong class="text-slate-950 dark:text-white">${Math.round(current.coachingUtilization).toLocaleString()}</strong>`;
+                if (cStep2) cStep2.innerHTML = `Direct spreadsheet value = <strong class="text-slate-950 dark:text-white">${Math.round(current.coachingCapacity).toLocaleString()}</strong>`;
+                if (cStep3) cStep3.innerHTML = `${Math.round(current.coachingCapacity).toLocaleString()} Cap - ${Math.round(current.coachingUtilization).toLocaleString()} Demand = <strong class="${current.coachingDifference >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${Math.round(current.coachingDifference).toLocaleString()}</strong>`;
+                if (cStep4) cStep4.innerHTML = `${Math.round(current.coachingDifference).toLocaleString()} Margin / 22 Ratio = <strong class="${current.coachingFteDiff >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${current.coachingFteDiff.toFixed(2)} FTE</strong>`;
+                if (cResult) { cResult.textContent = `${current.coachingFteDiff >= 0 ? '+' : ''}${current.coachingFteDiff.toFixed(2)} FTE`; cResult.className = `text-sm font-mono font-bold ${current.coachingFteDiff >= 0 ? 'text-emerald-500' : 'text-rose-500'}`; }
+            }
+
+            const pStep1 = document.getElementById('math-psychiatry-step1');
+            const pStep2 = document.getElementById('math-psychiatry-step2');
+            const pStep3 = document.getElementById('math-psychiatry-step3');
+            const pStep4 = document.getElementById('math-psychiatry-step4');
+            const pResult = document.getElementById('math-psychiatry-result');
+            if (!pActive) {
+                if (pStep1) pStep1.innerHTML = `<span class="text-slate-400 italic">Excluded</span>`;
+                if (pStep2) pStep2.innerHTML = `---`; if (pStep3) pStep3.innerHTML = `---`; if (pStep4) pStep4.innerHTML = `---`;
+                if (pResult) { pResult.textContent = "Ignored"; pResult.className = "text-sm font-bold text-slate-400"; }
+            } else {
+                const pDiff = current.psychiatryDiff85;
+                const pFteDiff = current.psychiatryFte85;
+                const pDemandVal = current.psychiatryCensus * 0.85;
+                const pDemandLbl = document.getElementById('math-psych-demand-label');
+                if (pDemandLbl) pDemandLbl.textContent = '1. Target Demand Census (85% Static Census)';
+                if (pStep1) pStep1.innerHTML = `${current.psychiatryCensus.toLocaleString()} Census * 0.85 = <strong class="text-slate-950 dark:text-white">${pDemandVal.toLocaleString()}</strong>`;
+                if (pStep2) pStep2.innerHTML = `Direct spreadsheet value = <strong class="text-slate-950 dark:text-white">${Math.round(current.psychiatryCapacity).toLocaleString()}</strong>`;
+                if (pStep3) pStep3.innerHTML = `${Math.round(current.psychiatryCapacity).toLocaleString()} Cap - ${Math.round(pDemandVal).toLocaleString()} Target = <strong class="${pDiff >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${Math.round(pDiff).toLocaleString()}</strong>`;
+                if (pStep4) pStep4.innerHTML = `${Math.round(pDiff).toLocaleString()} Margin / 224 Ratio = <strong class="${pFteDiff >= 0 ? 'text-emerald-500' : 'text-rose-500'}">${pFteDiff.toFixed(2)} FTE</strong>`;
+                if (pResult) { pResult.textContent = `${pFteDiff >= 0 ? '+' : ''}${pFteDiff.toFixed(2)} FTE`; pResult.className = `text-sm font-mono font-bold ${pFteDiff >= 0 ? 'text-emerald-500' : 'text-rose-500'}`; }
+            }
+        };
+
+        window.renderTable = function() {
+            const tbody = document.getElementById('master-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            window.computedMonths.forEach(m => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors";
+                const tActive = window.isMonthActive('Therapy', m.name);
+                const cActive = window.isMonthActive('Coaching', m.name);
+                const pActive = window.isMonthActive('Psychiatry', m.name);
+
+                const therapyCapStr = tActive ? Math.round(m.therapyCapacity).toLocaleString() : `<span class="text-slate-400 italic">Ignored</span>`;
+                const therapyFteStr = tActive ? `${m.therapyFteDiff >= 0 ? '+' : ''}${m.therapyFteDiff.toFixed(2)}` : `---`;
+                const therapyFteClass = tActive ? (m.therapyFteDiff >= 0 ? 'text-emerald-500' : 'text-rose-500') : 'text-slate-400';
+
+                const coachCapStr = cActive ? Math.round(m.coachingCapacity).toLocaleString() : `<span class="text-slate-400 italic">Ignored</span>`;
+                const coachFteStr = cActive ? `${m.coachingFteDiff >= 0 ? '+' : ''}${m.coachingFteDiff.toFixed(2)}` : `---`;
+                const coachFteClass = cActive ? (m.coachingFteDiff >= 0 ? 'text-emerald-500' : 'text-rose-500') : 'text-slate-400';
+
+                const pFteDiff = m.psychiatryFte100;
+                const psychCapStr = pActive ? Math.round(m.psychiatryCapacity).toLocaleString() : `<span class="text-slate-400 italic">Ignored</span>`;
+                const psychFteStr = pActive ? `${pFteDiff >= 0 ? '+' : ''}${pFteDiff.toFixed(2)}` : `---`;
+                const psychFteClass = pActive ? (pFteDiff >= 0 ? 'text-emerald-500' : 'text-rose-500') : 'text-slate-400';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">${m.name}</td>
+                    <td class="py-3 px-4 text-right font-medium text-slate-600 dark:text-slate-400">${Math.round(m.therapyCensus).toLocaleString()}</td>
+                    <td class="py-3 px-4 text-center bg-teal-50/10 text-slate-600 dark:text-slate-300">${therapyCapStr}</td>
+                    <td class="py-3 px-4 text-right bg-teal-50/10 font-extrabold pr-4 ${therapyFteClass}">${therapyFteStr}</td>
+                    <td class="py-3 px-4 text-center bg-indigo-50/10 text-slate-600 dark:text-slate-300">${coachCapStr}</td>
+                    <td class="py-3 px-4 text-right bg-indigo-50/10 font-extrabold pr-4 ${coachFteClass}">${coachFteStr}</td>
+                    <td class="py-3 px-4 text-center bg-amber-50/10 text-slate-600 dark:text-slate-300">${psychCapStr}</td>
+                    <td class="py-3 px-4 text-right bg-amber-50/10 font-extrabold pr-4 ${psychFteClass}">${psychFteStr}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.toggleForecastTable = function() {
+            const tableWrapper = document.getElementById('collapsible-table-wrapper');
+            const statusLabel = document.getElementById('table-collapsed-status');
+            const btnText = document.getElementById('collapse-btn-text');
+            const btnIcon = document.getElementById('collapse-icon');
+            window.isTableCollapsed = !window.isTableCollapsed;
+            if (window.isTableCollapsed) {
+                if (tableWrapper) tableWrapper.classList.add('hidden');
+                if (statusLabel) statusLabel.classList.remove('hidden');
+                if (btnText) btnText.textContent = "Expand Forecast Grid";
+                if (btnIcon) btnIcon.classList.remove('rotate-180');
+            } else {
+                if (tableWrapper) tableWrapper.classList.remove('hidden');
+                if (statusLabel) statusLabel.classList.add('hidden');
+                if (btnText) btnText.textContent = "Collapse Forecast Grid";
+                if (btnIcon) btnIcon.classList.add('rotate-180');
+            }
+        };
+
+        window.exportToCSV = function() {
+            let csvStr = "data:text/csv;charset=utf-8,Month,Census,Therapy Capacity,Therapy FTE Difference,Coaching Capacity,Coaching FTE Difference,Psychiatry Capacity,Psychiatry FTE Difference (100%),Psychiatry FTE Difference (85%)\n";
+            window.computedMonths.forEach(m => {
+                const tActive = window.isMonthActive('Therapy', m.name); const cActive = window.isMonthActive('Coaching', m.name); const pActive = window.isMonthActive('Psychiatry', m.name);
+                const tCap = tActive ? m.therapyCapacity : "Ignored"; const tFte = tActive ? m.therapyFteDiff.toFixed(2) : "Ignored";
+                const cCap = cActive ? m.coachingCapacity : "Ignored"; const cFte = cActive ? m.coachingFteDiff.toFixed(2) : "Ignored";
+                const pCap = pActive ? m.psychiatryCapacity : "Ignored"; const pFte100 = pActive ? m.psychiatryFte100.toFixed(2) : "Ignored"; const pFte85 = pActive ? m.psychiatryFte85.toFixed(2) : "Ignored";
+                csvStr += `"${m.name}",${m.therapyCensus},${tCap},${tFte},${cCap},${cFte},${pCap},${pFte100},${pFte85}\n`;
+            });
+            const encoded = encodeURI(csvStr); const anchor = document.createElement('a');
+            anchor.setAttribute('href', encoded); anchor.setAttribute('download', `Clinical_Staffing_Active_Export_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(anchor); anchor.click(); document.body.removeChild(anchor);
+        };
+
+        window.toggleConfigPanel = function() { document.getElementById('config-panel').classList.toggle('hidden'); };
+
+        window.saveAndReloadUrl = function() {
+            localStorage.setItem(STORAGE_KEY_URL, document.getElementById('csv-url-input').value.trim());
+            localStorage.setItem(STORAGE_KEY_LOOKER_GID, document.getElementById('looker-gid-input').value.trim());
+            localStorage.setItem(STORAGE_KEY_SD_GID, document.getElementById('sd-gid-input').value.trim());
+            localStorage.setItem(STORAGE_KEY_START_MONTH, document.getElementById('start-month-input').value);
+            window.toggleConfigPanel(); window.fetchAndProcess();
+        };
+
+        window.resetToDefaultUrl = function() {
+            document.getElementById('csv-url-input').value = DEFAULT_CSV_URL; localStorage.removeItem(STORAGE_KEY_URL);
+            document.getElementById('looker-gid-input').value = DEFAULT_LOOKER_GID; localStorage.removeItem(STORAGE_KEY_LOOKER_GID);
+            document.getElementById('sd-gid-input').value = DEFAULT_SD_GID; localStorage.removeItem(STORAGE_KEY_SD_GID);
+            document.getElementById('start-month-input').value = 'Auto'; localStorage.removeItem(STORAGE_KEY_START_MONTH);
+            window.ignoredMonths = { Therapy: {}, Coaching: {}, Psychiatry: {} }; localStorage.setItem(STORAGE_KEY_EXCLUSIONS, JSON.stringify(window.ignoredMonths));
+            window.mutedAlerts = { Therapy: {}, Coaching: {}, Psychiatry: {} }; localStorage.setItem(STORAGE_KEY_MUTED_ALERTS, JSON.stringify(window.mutedAlerts));
+            
+            window.providerRamps = JSON.parse(JSON.stringify(DEFAULT_RAMPS)); localStorage.removeItem(STORAGE_KEY_RAMPS);
+            window.strategicAssumptions = JSON.parse(JSON.stringify(DEFAULT_ASSUMPTIONS)); localStorage.removeItem(STORAGE_KEY_ASSUMPTIONS);
+            window.utilizationTargets = { therapy: [], coaching: [], psychiatry: [] }; localStorage.removeItem(STORAGE_KEY_UTILS);
+            window.toggleConfigPanel(); window.fetchAndProcess();
+        };
+
+        window.showSuccessBanner = function(msg) {
+            const banner = document.getElementById('alert-banner'); const icon = document.getElementById('alert-icon-container'); const title = document.getElementById('alert-title'); const message = document.getElementById('alert-message');
+            if (banner && icon && title && message) {
+                banner.className = "rounded-xl border p-4 shadow-sm transition-all duration-300 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900/40";
+                icon.className = "p-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"; icon.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i>';
+                title.textContent = "Data Updated"; title.className = "text-sm font-semibold text-emerald-800 dark:text-emerald-300"; message.textContent = msg; banner.classList.remove('hidden');
+            }
+            const syncStatus = document.getElementById('sync-status'); if (syncStatus) { syncStatus.textContent = "Connected to Live Environment"; syncStatus.className = "font-semibold text-emerald-600 dark:text-emerald-400"; }
+            const lastUpdated = document.getElementById('last-updated'); if (lastUpdated) lastUpdated.textContent = `Sync: ${new Date().toLocaleTimeString()}`;
+            lucide.createIcons(); setTimeout(() => { if (banner) banner.classList.add('hidden'); }, 4000);
+        };
+
+        window.showWarningBanner = function(msg) {
+            const banner = document.getElementById('alert-banner'); const icon = document.getElementById('alert-icon-container'); const title = document.getElementById('alert-title'); const message = document.getElementById('alert-message');
+            if (banner && icon && title && message) {
+                banner.className = "rounded-xl border p-4 shadow-sm transition-all duration-300 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/40";
+                icon.className = "p-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400"; icon.innerHTML = '<i data-lucide="info" class="w-5 h-5"></i>';
+                title.textContent = "Simulation Mode Active"; title.className = "text-sm font-semibold text-amber-800 dark:text-amber-300"; message.textContent = "Direct CORS connection sandboxed in Site iframe. Displaying exact values transcribed from your spreadsheet with custom June-December state-by-state heatmaps."; banner.classList.remove('hidden');
+            }
+            const syncStatus = document.getElementById('sync-status'); if (syncStatus) { syncStatus.textContent = "Simulation Dashboard Active"; syncStatus.className = "font-semibold text-amber-500"; }
+            const lastUpdated = document.getElementById('last-updated'); if (lastUpdated) lastUpdated.textContent = `Local Backup Active`; lucide.createIcons();
+        };
+
+        window.hideAlertBanner = function() { document.getElementById('alert-banner').classList.add('hidden'); };
     </script>
 </body>
 </html>
